@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/analyses/analysis_form.dart';
 import '../features/analyses/analyses_screen.dart';
 import '../features/notes/notes_form.dart';
 import '../features/notes/notes_screen.dart';
@@ -12,6 +13,10 @@ import 'strings.dart';
 
 int? _workIdFrom(GoRouterState state) {
   return int.tryParse(state.pathParameters['workId'] ?? '');
+}
+
+int? _analysisIdFrom(GoRouterState state) {
+  return int.tryParse(state.pathParameters['analysisId'] ?? '');
 }
 
 int? _noteIdFrom(GoRouterState state) {
@@ -29,6 +34,13 @@ Widget _invalidNoteScreen() {
   return Scaffold(
     appBar: AppBar(title: const Text(AppStrings.editNote)),
     body: const Center(child: Text(AppStrings.invalidNote)),
+  );
+}
+
+Widget _invalidAnalysisScreen() {
+  return Scaffold(
+    appBar: AppBar(title: const Text(AppStrings.editAnalysis)),
+    body: const Center(child: Text(AppStrings.invalidAnalysis)),
   );
 }
 
@@ -99,6 +111,20 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/analyses',
               builder: (context, state) => const AnalysesScreen(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => const AnalysisFormScreen(),
+                ),
+                GoRoute(
+                  path: ':analysisId/edit',
+                  builder: (context, state) {
+                    final analysisId = _analysisIdFrom(state);
+                    if (analysisId == null) return _invalidAnalysisScreen();
+                    return AnalysisFormScreen(analysisId: analysisId);
+                  },
+                ),
+              ],
             ),
           ],
         ),

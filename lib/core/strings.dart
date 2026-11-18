@@ -71,8 +71,23 @@ abstract final class AppStrings {
 
   static const String linkedNotes = 'Fichamentos desta obra';
   static const String linkedAnalyses = 'Análises desta obra';
+  static const String linkedWorks = 'Obras vinculadas';
   static const String noLinkedNotes = 'Nenhum fichamento vinculado.';
   static const String noLinkedAnalyses = 'Nenhuma análise vinculada.';
+
+  static const String newAnalysis = 'Nova análise';
+  static const String editAnalysis = 'Editar análise';
+  static const String invalidAnalysis = 'Análise não encontrada.';
+  static const String searchAnalyses = 'Buscar análises';
+  static const String analysisBody = 'Texto';
+  static const String autoSaveHint = 'As alterações são salvas ao sair da tela.';
+  static const String noAnalyses = 'Nenhuma análise cadastrada.';
+  static const String noAnalysesFilter = 'Nenhuma análise com esse título.';
+  static const String analysisSaved = 'Análise salva.';
+  static const String analysisDeleted = 'Análise excluída.';
+  static const String deleteAnalysisTitle = 'Excluir análise?';
+  static const String deleteAnalysisBody =
+      'Os vínculos com obras também serão removidos. As obras não serão apagadas.';
 
   static const String newNote = 'Novo fichamento';
   static const String editNote = 'Editar fichamento';
