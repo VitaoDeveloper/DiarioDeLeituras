@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/analyses/analyses_screen.dart';
+import '../features/notes/notes_form.dart';
 import '../features/notes/notes_screen.dart';
 import '../features/stats/stats_screen.dart';
 import '../features/works/work_detail_screen.dart';
@@ -13,10 +14,21 @@ int? _workIdFrom(GoRouterState state) {
   return int.tryParse(state.pathParameters['workId'] ?? '');
 }
 
+int? _noteIdFrom(GoRouterState state) {
+  return int.tryParse(state.pathParameters['noteId'] ?? '');
+}
+
 Widget _invalidWorkScreen() {
   return Scaffold(
     appBar: AppBar(title: const Text(AppStrings.workDetails)),
     body: const Center(child: Text(AppStrings.invalidWork)),
+  );
+}
+
+Widget _invalidNoteScreen() {
+  return Scaffold(
+    appBar: AppBar(title: const Text(AppStrings.editNote)),
+    body: const Center(child: Text(AppStrings.invalidNote)),
   );
 }
 
@@ -65,6 +77,20 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/notes',
               builder: (context, state) => const NotesScreen(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => const NotesFormScreen(),
+                ),
+                GoRoute(
+                  path: ':noteId/edit',
+                  builder: (context, state) {
+                    final noteId = _noteIdFrom(state);
+                    if (noteId == null) return _invalidNoteScreen();
+                    return NotesFormScreen(noteId: noteId);
+                  },
+                ),
+              ],
             ),
           ],
         ),

@@ -74,6 +74,42 @@ abstract final class AppStrings {
   static const String noLinkedNotes = 'Nenhum fichamento vinculado.';
   static const String noLinkedAnalyses = 'Nenhuma análise vinculada.';
 
+  static const String newNote = 'Novo fichamento';
+  static const String editNote = 'Editar fichamento';
+  static const String invalidNote = 'Fichamento não encontrado.';
+  static const String searchNotes = 'Buscar fichamentos';
+  static const String noteWork = 'Obra';
+  static const String selectWork = 'Selecione uma obra.';
+  static const String label = 'Rótulo';
+  static const String summary = 'Resumo';
+  static const String thesis = 'Tese';
+  static const String concepts = 'Conceitos';
+  static const String critique = 'Crítica';
+  static const String updatedAt = 'Atualizado em';
+  static const String quoteText = 'Texto da citação';
+  static const String quotePage = 'Página';
+  static const String quoteComment = 'Comentário';
+  static const String quotes = 'Citações';
+  static const String addQuote = 'Adicionar citação';
+  static const String removeQuote = 'Remover citação';
+  static const String requiredQuoteText = 'Informe o texto da citação.';
+  static const String noteWithoutLabel = '(sem rótulo)';
+  static const String noSummary = 'Sem resumo.';
+  static const String noNotes = 'Nenhum fichamento cadastrado.';
+  static const String noNotesFilter = 'Nenhum fichamento com essa busca.';
+  static const String needWorkForNote =
+      'Cadastre uma obra antes de criar um fichamento.';
+  static const String noteSaved = 'Fichamento salvo.';
+  static const String noteDeleted = 'Fichamento excluído.';
+  static const String deleteNoteTitle = 'Excluir fichamento?';
+  static const String deleteNoteBody =
+      'As citações deste fichamento também serão removidas.';
+  static const String deleteQuoteTitle = 'Remover citação?';
+  static const String deleteQuoteBody =
+      'Esta citação será excluída ao salvar o fichamento.';
+
+  static String quoteTitle(int index) => 'Citação $index';
+
   static const String deleteWorkTitle = 'Excluir obra?';
   static const String deleteWorkBody =
       'As sessões, fichamentos e vínculos desta obra também serão removidos.';

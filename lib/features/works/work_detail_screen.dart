@@ -306,7 +306,10 @@ class WorkDetailScreen extends ConsumerWidget {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (final note in notes) Text('• ${note.label}'),
+                            for (final note in notes)
+                              Text(
+                                '• ${note.label.isEmpty ? AppStrings.noteWithoutLabel : note.label}',
+                              ),
                           ],
                         ),
                 ),
