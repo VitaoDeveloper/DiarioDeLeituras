@@ -9,6 +9,12 @@ Future<void> initializeFormatting() => initializeDateFormatting(appLocale.toStri
 String formatDate(DateTime value) =>
     DateFormat('dd/MM/yyyy', appLocale.toString()).format(value);
 
+String formatMonthYear(DateTime value) =>
+    DateFormat('MMMM yyyy', appLocale.toString()).format(value);
+
+String formatMonthShort(int month) =>
+    DateFormat.MMM(appLocale.toString()).format(DateTime(2020, month));
+
 String formatDateTime(DateTime value) =>
     DateFormat('dd/MM/yyyy HH:mm', appLocale.toString()).format(value);
 

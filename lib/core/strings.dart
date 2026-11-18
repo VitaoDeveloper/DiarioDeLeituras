@@ -5,6 +5,50 @@ abstract final class AppStrings {
   static const String analyses = 'Análises';
   static const String stats = 'Estatísticas';
 
+  static const String currentStreak = 'Sequência atual';
+  static const String bestStreak = 'Maior sequência';
+  static const String streakDaySingular = 'dia seguido';
+  static const String streakDaysPlural = 'dias seguidos';
+  static const String streakAtRisk = 'Em risco';
+  static const String readTodayHint = 'Leia hoje para manter a sequência';
+  static const String noStreak = 'Nenhuma leitura registrada ainda.';
+  static const String calendar = 'Calendário de leitura';
+  static const String statusChart = 'Obras por status';
+  static const String typeChart = 'Obras por tipo';
+  static const String genreChart = 'Obras por gênero';
+  static const String pagesChart = 'Páginas lidas';
+  static const String completedChart = 'Obras concluídas';
+  static const String ratingByGenre = 'Nota média por gênero';
+  static const String ratingByAuthor = 'Nota média por autor';
+  static const String periodMonth = 'Mês';
+  static const String periodYear = 'Ano';
+  static const String previousPeriod = 'Período anterior';
+  static const String nextPeriod = 'Próximo período';
+  static const String workSingular = 'obra';
+  static const String workPlural = 'obras';
+  static const List<String> weekdayInitials = [
+    'seg',
+    'ter',
+    'qua',
+    'qui',
+    'sex',
+    'sáb',
+    'dom',
+  ];
+  static const String emptyWorksChart = 'Cadastre obras para ver este gráfico.';
+  static const String emptySessionsChart =
+      'Registre sessões de leitura para ver este gráfico.';
+  static const String emptyFinishedChart =
+      'Marque obras como lidas para ver este gráfico.';
+  static const String emptyRatingsChart = 'Avalie obras para ver este gráfico.';
+  static const String emptyPeriod = 'Nenhum dado neste período.';
+
+  static String streakLabel(int count) =>
+      '$count ${count == 1 ? streakDaySingular : streakDaysPlural}';
+
+  static String workCountLabel(int count) =>
+      '$count ${count == 1 ? workSingular : workPlural}';
+
   static const String newWork = 'Nova obra';
   static const String editWork = 'Editar obra';
   static const String workDetails = 'Detalhes da obra';

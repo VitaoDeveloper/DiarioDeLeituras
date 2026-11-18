@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reading_management/app.dart';
 import 'package:reading_management/core/strings.dart';
 import 'package:reading_management/data/database.dart';
+import 'package:reading_management/features/stats/stats_providers.dart';
 import 'package:reading_management/features/works/works_providers.dart';
 
 void main() {
@@ -13,6 +14,14 @@ void main() {
         overrides: [
           worksProvider.overrideWith((ref) => Stream.value(const <Work>[])),
           genresProvider.overrideWithValue(const <String>[]),
+          streakProvider.overrideWithValue(
+            const StreakInfo(
+              current: 0,
+              best: 0,
+              atRisk: false,
+              readDays: <int>{},
+            ),
+          ),
         ],
         child: const App(),
       ),

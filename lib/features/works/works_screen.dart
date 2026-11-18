@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
+import '../stats/stats_providers.dart';
 import 'works_providers.dart';
 
 class WorksScreen extends ConsumerStatefulWidget {
@@ -26,10 +27,24 @@ class _WorksScreenState extends ConsumerState<WorksScreen> {
     super.dispose();
   }
 
+  Widget _streakIndicator(StreakInfo streak) {
+    return ListTile(
+      leading: const Icon(Icons.local_fire_department_outlined),
+      title: Text(
+        streak.current == 0
+            ? AppStrings.noStreak
+            : AppStrings.streakLabel(streak.current),
+      ),
+      subtitle: streak.atRisk ? const Text(AppStrings.readTodayHint) : null,
+      onTap: () => context.go('/stats'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final worksAsync = ref.watch(worksProvider);
     final genres = ref.watch(genresProvider);
+    final streak = ref.watch(streakProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.works)),
@@ -39,6 +54,7 @@ class _WorksScreenState extends ConsumerState<WorksScreen> {
       ),
       body: Column(
         children: [
+          _streakIndicator(streak),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
