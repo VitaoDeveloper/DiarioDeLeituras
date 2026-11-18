@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
+import '../../data/backup_service.dart';
 import '../../data/database.dart';
 import '../stats/stats_providers.dart';
 import 'works_providers.dart';
@@ -40,6 +41,96 @@ class _WorksScreenState extends ConsumerState<WorksScreen> {
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _export() async {
+    try {
+      await ref.read(backupServiceProvider).exportBackup();
+      _showMessage(AppStrings.exportSuccess);
+    } on BackupException catch (error) {
+      _showMessage(error.message);
+    } catch (_) {
+      _showMessage(AppStrings.exportError);
+    }
+  }
+
+  Future<void> _import() async {
+    try {
+      final data = await ref.read(backupServiceProvider).pickBackup();
+      if (data == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text(AppStrings.importTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(AppStrings.importConfirmation),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.importSummary(
+                  data.workCount,
+                  data.noteCount,
+                  data.analysisCount,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(AppStrings.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(AppStrings.confirm),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      await ref.read(backupServiceProvider).importBackup(data);
+      _showMessage(AppStrings.importSuccess);
+    } on BackupException catch (error) {
+      _showMessage(error.message);
+    } catch (_) {
+      _showMessage(AppStrings.importError);
+    }
+  }
+
+  Future<void> _openSettings() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text(AppStrings.settings),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.ios_share),
+            title: const Text(AppStrings.exportData),
+            onTap: () {
+              Navigator.of(context).pop();
+              _export();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.file_open),
+            title: const Text(AppStrings.importData),
+            onTap: () {
+              Navigator.of(context).pop();
+              _import();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final worksAsync = ref.watch(worksProvider);
@@ -47,7 +138,16 @@ class _WorksScreenState extends ConsumerState<WorksScreen> {
     final streak = ref.watch(streakProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.works)),
+      appBar: AppBar(
+        title: const Text(AppStrings.works),
+        actions: [
+          IconButton(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings),
+            tooltip: AppStrings.settings,
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/works/new'),
         child: const Icon(Icons.add),

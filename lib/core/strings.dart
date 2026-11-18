@@ -5,6 +5,37 @@ abstract final class AppStrings {
   static const String analyses = 'Análises';
   static const String stats = 'Estatísticas';
 
+  static const String settings = 'Configurações';
+  static const String exportData = 'Exportar dados';
+  static const String importData = 'Importar dados';
+  static const String importTitle = 'Importar dados';
+  static const String importConfirmation =
+      'Os dados atuais serão substituídos pelos dados do arquivo. '
+      'Esta ação não pode ser desfeita.';
+  static const String exportSuccess = 'Arquivo compartilhado.';
+  static const String importSuccess = 'Dados importados.';
+  static const String exportError = 'Não foi possível exportar os dados.';
+  static const String importError = 'Não foi possível importar os dados.';
+  static const String invalidJson = 'Arquivo inválido: não é um JSON de backup.';
+  static const String invalidBackup = 'Arquivo de backup inválido.';
+  static const String unsupportedVersion =
+      'Versão de backup não suportada.';
+  static const String noteSingular = 'fichamento';
+  static const String notePlural = 'fichamentos';
+  static const String analysisSingular = 'análise';
+  static const String analysisPlural = 'análises';
+
+  static String noteCountLabel(int count) =>
+      '$count ${count == 1 ? noteSingular : notePlural}';
+
+  static String analysisCountLabel(int count) =>
+      '$count ${count == 1 ? analysisSingular : analysisPlural}';
+
+  static String importSummary(int works, int notes, int analyses) =>
+      '${workCountLabel(works)}\n'
+      '${noteCountLabel(notes)}\n'
+      '${analysisCountLabel(analyses)}';
+
   static const String currentStreak = 'Sequência atual';
   static const String bestStreak = 'Maior sequência';
   static const String streakDaySingular = 'dia seguido';
