@@ -2,8 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database.dart';
 
+final analysesDaoProvider = Provider<AnalysesDao>((ref) {
+  return ref.watch(appDatabaseProvider).analysesDao;
+});
+
 final analysesProvider = StreamProvider<List<Analysis>>((ref) {
-  return ref.watch(appDatabaseProvider).analysesDao.watchAll();
+  return ref.watch(analysesDaoProvider).watchAll();
 });
 
 final linksForAnalysisProvider =

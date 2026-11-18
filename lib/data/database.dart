@@ -131,6 +131,9 @@ class WorksDao extends DatabaseAccessor<AppDatabase> with _$WorksDaoMixin {
   Future<Work?> findById(int id) =>
       (select(works)..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  Stream<Work?> watchById(int id) =>
+      (select(works)..where((t) => t.id.equals(id))).watchSingleOrNull();
+
   Future<int> insertWork(WorksCompanion work) => into(works).insert(work);
 
   Future<bool> updateWork(Work work) => update(works).replace(work);
@@ -227,6 +230,9 @@ class AnalysisWorksDao extends DatabaseAccessor<AppDatabase>
   Stream<List<AnalysisWork>> watchByAnalysis(int analysisId) =>
       (select(analysisWorks)..where((t) => t.analysisId.equals(analysisId)))
           .watch();
+
+  Stream<List<AnalysisWork>> watchByWork(int workId) =>
+      (select(analysisWorks)..where((t) => t.workId.equals(workId))).watch();
 
   Future<int> insertLink(AnalysisWorksCompanion link) =>
       into(analysisWorks).insert(link);

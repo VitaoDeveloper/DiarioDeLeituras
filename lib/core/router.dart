@@ -4,8 +4,21 @@ import 'package:go_router/go_router.dart';
 import '../features/analyses/analyses_screen.dart';
 import '../features/notes/notes_screen.dart';
 import '../features/stats/stats_screen.dart';
+import '../features/works/work_detail_screen.dart';
+import '../features/works/works_form.dart';
 import '../features/works/works_screen.dart';
 import 'strings.dart';
+
+int? _workIdFrom(GoRouterState state) {
+  return int.tryParse(state.pathParameters['workId'] ?? '');
+}
+
+Widget _invalidWorkScreen() {
+  return Scaffold(
+    appBar: AppBar(title: const Text(AppStrings.workDetails)),
+    body: const Center(child: Text(AppStrings.invalidWork)),
+  );
+}
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/works',
@@ -20,6 +33,30 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/works',
               builder: (context, state) => const WorksScreen(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => const WorksFormScreen(),
+                ),
+                GoRoute(
+                  path: ':workId',
+                  builder: (context, state) {
+                    final workId = _workIdFrom(state);
+                    if (workId == null) return _invalidWorkScreen();
+                    return WorkDetailScreen(workId: workId);
+                  },
+                  routes: [
+                    GoRoute(
+                      path: 'edit',
+                      builder: (context, state) {
+                        final workId = _workIdFrom(state);
+                        if (workId == null) return _invalidWorkScreen();
+                        return WorksFormScreen(workId: workId);
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
