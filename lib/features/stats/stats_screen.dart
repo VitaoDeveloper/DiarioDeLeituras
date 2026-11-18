@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
+import '../works/works_providers.dart';
 import 'stats_providers.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -325,6 +326,22 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final worksAsync = ref.watch(worksProvider);
+    final sessionsAsync = ref.watch(readingSessionsProvider);
+
+    if (worksAsync.isLoading || sessionsAsync.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text(AppStrings.stats)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (worksAsync.hasError || sessionsAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text(AppStrings.stats)),
+        body: const Center(child: Text(AppStrings.loadError)),
+      );
+    }
+
     final streak = ref.watch(streakProvider);
     final filter = (period: _period, reference: _reference);
     final summary = ref.watch(statsProvider(filter));
