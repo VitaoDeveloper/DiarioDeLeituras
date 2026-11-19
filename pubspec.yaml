@@ -33,6 +33,7 @@ flutter:
 
   assets:
     - assets/fonts/OFL.txt
+    - assets/logo/
 
   fonts:
     - family: Literata

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/stats/stats_providers.dart';
 
+import 'app_logo.dart';
 import 'settings_screen.dart';
 import '../features/analyses/analysis_form.dart';
 import '../features/analyses/analyses_screen.dart';
@@ -192,11 +193,19 @@ class _ScaffoldWithDrawer extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    AppStrings.appTitle,
-                    style: Theme.of(context).textTheme.titleLarge,
+                  Row(
+                    children: [
+                      const AppLogo(size: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          AppStrings.appTitle,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     streak.current == 0
                         ? AppStrings.noStreak
