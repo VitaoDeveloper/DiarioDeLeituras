@@ -32,7 +32,7 @@ App pessoal, 100% offline, para registrar obras (livros, artigos e outros textos
 - Flutter estável mais recente, Dart null-safe, Material 3.
 - Banco: **SQLite com Drift** (`drift`, `drift_flutter`, `drift_dev`, `build_runner`).
 - Estado: **Riverpod** (`flutter_riverpod`), sem geração de código para os providers. Prefira `StreamProvider` sobre as queries reativas do Drift.
-- Navegação: `go_router` com `StatefulShellRoute` e barra de navegação inferior.
+- Navegação: `go_router` com `StatefulShellRoute` e **menu lateral** (`Drawer`), sem barra de navegação inferior.
 - Gráficos: `fl_chart`.
 - Backup: `file_picker`, `share_plus`, `path_provider`.
 - Formatação de datas e números: `intl` com locale `pt_BR`.
@@ -86,7 +86,8 @@ Não tem tabela própria: é sempre calculada a partir de `reading_sessions`.
 - **Maior sequência:** maior série de dias consecutivos já registrada.
 - Como as sessões podem ser registradas com data passada, editar ou apagar uma sessão recalcula a sequência.
 
-## 6. Telas (barra inferior com 4 abas)
+## 6. Telas (menu lateral com 4 seções)
+Navegação: um `NavigationDrawer` (menu lateral) com as quatro seções (Obras, Fichamentos, Análises, Estatísticas), mais um item "Configurações" (exportar e importar dados) separado por um divisor no fim. A barra superior de cada seção mostra o ícone de menu (hambúrguer) que abre o menu; o item da seção atual fica destacado. Cabeçalho do menu com o nome do app e, abaixo dele, a sequência atual. Não há barra de navegação inferior.
 1. **Obras**
    - Lista com filtros por status, tipo e gênero e busca por título ou autor.
    - Cada item mostra título, autor, tipo, status e nota.
@@ -108,7 +109,7 @@ Não tem tabela própria: é sempre calculada a partir de `reading_sessions`.
    - Obras concluídas por mês e por ano (usa `finishedAt`).
    - Seletor de período. Estados vazios com mensagem curta indicando o que registrar.
 
-Configurações (ícone na barra superior da aba Obras): exportar e importar dados.
+Configurações (item do menu lateral): exportar e importar dados.
 
 ## 7. Backup
 - **Exportar:** gerar um arquivo `.json` com todas as tabelas e um campo `version`, e abrir o diálogo de compartilhamento do Android.
@@ -188,7 +189,7 @@ Todo o resto é neutro: chips de status e tipo (contorno neutro; "lido" com pree
 ### Forma, espaço e componentes
 - Raio: 8 px em cartões, botões, campos e chips; 12 px em diálogos e folhas inferiores.
 - Espaçamento em múltiplos de 8: margem lateral de tela 16, padding interno de cartão 16, intervalo entre cartões 12, altura mínima de linha de lista 56. Áreas de toque de pelo menos 48 px.
-- Barra superior plana, sem tom ao rolar, título em `titleLarge`. Barra de navegação inferior com indicador em `accent` suave e ícones contornados (`*_outlined`).
+- Barra superior plana, sem tom ao rolar, título em `titleLarge`. Menu lateral (`NavigationDrawer`) em `surface`, com o item selecionado destacado por indicador em `accent` suave e ícones contornados (`*_outlined`); itens com altura de 56 px.
 - Campos de texto preenchidos com `surfaceVariant`, sem sublinhado, borda `outline` de 1 px e, em foco, borda `accent` de 1,5 px.
 - Divisores finos em `outline`. Snackbars e diálogos nas cores de `surface`.
 - Estados vazios: ícone contornado neutro, uma frase curta em `bodyLarge` e, quando fizer sentido, um botão de ação.
@@ -206,3 +207,7 @@ Todo o resto é neutro: chips de status e tipo (contorno neutro; "lido" com pree
 - Contraste de texto e de controles de pelo menos 4,5:1 (3:1 para ícones e bordas de componentes).
 - Todas as telas funcionam com escala de texto 1,3 sem estouro.
 - Com o app em uso, a única cor viva é o acento carmesim, nos lugares listados acima.
+
+### Ajustes pós-teste no celular (aplicar nas etapas de estilização)
+- **Banner "DEBUG":** definir `debugShowCheckedModeBanner: false` no `MaterialApp.router`. (O banner só aparece em builds de depuração; o APK de release nunca o mostra.)
+- **Filtros da lista de obras (Status, Tipo, Gênero):** devem ser campos maiores e mais "cheios", não compactos. Altura mínima de 56 px, preenchimento interno horizontal de 16 px, rótulo flutuante legível (`bodySmall`, cor secundária), texto do valor em `bodyLarge`, fundo `surfaceVariant`, borda `outline` de 1 px e raio de 8 px. Use `DropdownMenu` (Material 3) ou `InputDecorator` com `isDense: false` e dê a mesma altura e estilo a todos os dropdowns e campos de busca do app, definindo isso no `inputDecorationTheme` e no `dropdownMenuTheme` de `theme.dart`, nunca por tela. Em telas estreitas, os três filtros podem quebrar em duas linhas (dois + um) em vez de ficarem espremidos lado a lado.
