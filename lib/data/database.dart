@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'database.g.dart';
@@ -267,7 +268,18 @@ class AnalysisWorksDao extends DatabaseAccessor<AppDatabase>
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(driftDatabase(name: 'diario_leituras'));
+  AppDatabase()
+    : super(
+        driftDatabase(
+          name: 'diario_leituras',
+          web: kIsWeb
+              ? DriftWebOptions(
+                  sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+                  driftWorker: Uri.parse('drift_worker.js'),
+                )
+              : null,
+        ),
+      );
 
   AppDatabase.connect(super.connection);
 

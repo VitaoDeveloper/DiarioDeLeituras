@@ -194,6 +194,35 @@ ThemeData buildTheme(Brightness brightness) {
         horizontal: AppTokens.screenMargin,
         vertical: AppTokens.space + AppTokens.borderWidth,
       ),
+      constraints: const BoxConstraints(minHeight: AppTokens.minFilterHeight),
+    ),
+    dropdownMenuTheme: DropdownMenuThemeData(
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: palette.surfaceVariant,
+        labelStyle: textTheme.bodyMedium!.copyWith(color: palette.onSurfaceVariant),
+        floatingLabelStyle: textTheme.bodySmall!.copyWith(color: palette.accent),
+        border: _fieldBorder(border),
+        enabledBorder: _fieldBorder(border),
+        focusedBorder: _fieldBorder(focusedBorder),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.screenMargin,
+          vertical: AppTokens.space + AppTokens.borderWidth,
+        ),
+        constraints: const BoxConstraints(minHeight: AppTokens.minFilterHeight),
+      ),
+      textStyle: textTheme.bodyLarge!.copyWith(color: palette.onBackground),
+      menuStyle: MenuStyle(
+        backgroundColor: WidgetStateProperty.all(palette.surface),
+        surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+        elevation: WidgetStateProperty.all(0),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radius),
+            side: border,
+          ),
+        ),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

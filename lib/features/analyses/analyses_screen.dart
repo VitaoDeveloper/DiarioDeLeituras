@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_drawer_button.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import 'analyses_providers.dart';
@@ -27,7 +28,10 @@ class _AnalysesScreenState extends ConsumerState<AnalysesScreen> {
     final analysesAsync = ref.watch(analysesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.analyses)),
+      appBar: AppBar(
+        title: const Text(AppStrings.analyses),
+        leading: const AppDrawerButton(),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/analyses/new'),
         child: const Icon(Icons.add),

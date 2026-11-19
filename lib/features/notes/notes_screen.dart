@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_drawer_button.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
@@ -112,7 +113,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final worksAsync = ref.watch(worksProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.notes)),
+      appBar: AppBar(
+        title: const Text(AppStrings.notes),
+        leading: const AppDrawerButton(),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createNote,
         child: const Icon(Icons.add),

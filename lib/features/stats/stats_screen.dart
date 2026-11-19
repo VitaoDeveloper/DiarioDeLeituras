@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_drawer_button.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../works/works_providers.dart';
@@ -331,13 +332,19 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
     if (worksAsync.isLoading || sessionsAsync.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text(AppStrings.stats)),
+        appBar: AppBar(
+          title: const Text(AppStrings.stats),
+          leading: const AppDrawerButton(),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (worksAsync.hasError || sessionsAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text(AppStrings.stats)),
+        appBar: AppBar(
+          title: const Text(AppStrings.stats),
+          leading: const AppDrawerButton(),
+        ),
         body: const Center(child: Text(AppStrings.loadError)),
       );
     }
@@ -347,7 +354,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final summary = ref.watch(statsProvider(filter));
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.stats)),
+      appBar: AppBar(
+        title: const Text(AppStrings.stats),
+        leading: const AppDrawerButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

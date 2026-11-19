@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/stats/stats_providers.dart';
+
+import 'settings_screen.dart';
 import '../features/analyses/analysis_form.dart';
 import '../features/analyses/analyses_screen.dart';
 import '../features/notes/notes_form.dart';
@@ -49,7 +53,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return _ScaffoldWithNavigationBar(navigationShell: navigationShell);
+        return _ScaffoldWithDrawer(navigationShell: navigationShell);
       },
       branches: [
         StatefulShellBranch(
@@ -138,41 +142,98 @@ final GoRouter appRouter = GoRouter(
         ),
       ],
     ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
   ],
 );
 
-class _ScaffoldWithNavigationBar extends StatelessWidget {
-  const _ScaffoldWithNavigationBar({required this.navigationShell});
+/// Chave do Scaffold raiz, usada pelas telas para abrir o menu lateral.
+final rootScaffoldKey = GlobalKey<ScaffoldState>();
+
+void openAppDrawer() {
+  rootScaffoldKey.currentState?.openDrawer();
+}
+
+class _ScaffoldWithDrawer extends ConsumerWidget {
+  const _ScaffoldWithDrawer({required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final streak = ref.watch(streakProvider);
+    final colors = Theme.of(context).colorScheme;
+
+    void goBranch(int index) {
+      if (index >= 4) {
+        Navigator.of(context).pop();
+        context.go('/settings');
+        return;
+      }
+      navigationShell.goBranch(
+        index,
+        initialLocation: index == navigationShell.currentIndex,
+      );
+      Navigator.of(context).pop();
+    }
+
     return Scaffold(
+      key: rootScaffoldKey,
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      drawer: NavigationDrawer(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: navigationShell.goBranch,
-        destinations: const [
-          NavigationDestination(
+        onDestinationSelected: goBranch,
+        children: [
+          DrawerHeader(
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppStrings.appTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    streak.current == 0
+                        ? AppStrings.noStreak
+                        : AppStrings.streakLabel(streak.current),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const NavigationDrawerDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
-            label: AppStrings.works,
+            label: Text(AppStrings.works),
           ),
-          NavigationDestination(
+          const NavigationDrawerDestination(
             icon: Icon(Icons.note_alt_outlined),
             selectedIcon: Icon(Icons.note_alt),
-            label: AppStrings.notes,
+            label: Text(AppStrings.notes),
           ),
-          NavigationDestination(
+          const NavigationDrawerDestination(
             icon: Icon(Icons.article_outlined),
             selectedIcon: Icon(Icons.article),
-            label: AppStrings.analyses,
+            label: Text(AppStrings.analyses),
           ),
-          NavigationDestination(
+          const NavigationDrawerDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
-            label: AppStrings.stats,
+            label: Text(AppStrings.stats),
+          ),
+          const Divider(),
+          NavigationDrawerDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: const Text(AppStrings.settings),
+            backgroundColor: colors.surface,
           ),
         ],
       ),

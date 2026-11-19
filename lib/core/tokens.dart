@@ -22,6 +22,7 @@ abstract final class AppTokens {
   static const double cardGap = 12;
   static const double minListTileHeight = 56;
   static const double minTouchTarget = 48;
+  static const double minFilterHeight = 56;
 
   // Texto
   static const double longTextFontSize = 17;
