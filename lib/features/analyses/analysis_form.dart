@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,8 +42,7 @@ class _AnalysisFormScreenState extends ConsumerState<AnalysisFormScreen> {
         try {
           final links = await ref
               .read(analysisWorksDaoProvider)
-              .watchByAnalysis(analysis.id)
-              .first;
+              .getByAnalysis(analysis.id);
           if (!mounted) return;
           setState(() {
             _selectedWorkIds = links.map((link) => link.workId).toSet();
@@ -100,21 +98,11 @@ class _AnalysisFormScreenState extends ConsumerState<AnalysisFormScreen> {
     setState(() => _saving = true);
     try {
       final now = DateTime.now();
-      final analysesDao = ref.read(analysesDaoProvider);
-      final linksDao = ref.read(analysisWorksDaoProvider);
-
-      final int analysisId;
-      if (widget.analysisId == null) {
-        analysisId = await analysesDao.insertAnalysis(
-          AnalysesCompanion(
-            title: Value(title),
-            body: Value(_bodyController.text),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-      } else {
-        final existing = await analysesDao.findById(widget.analysisId!);
+      Analysis? existing;
+      if (widget.analysisId != null) {
+        existing = await ref
+            .read(analysesDaoProvider)
+            .findById(widget.analysisId!);
         if (existing == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -123,29 +111,19 @@ class _AnalysisFormScreenState extends ConsumerState<AnalysisFormScreen> {
           }
           return false;
         }
-        analysisId = existing.id;
-        await analysesDao.updateAnalysis(
-          existing.copyWith(
-            title: title,
-            body: _bodyController.text,
-            updatedAt: now,
-          ),
-        );
       }
 
-      final links = await linksDao.watchByAnalysis(analysisId).first;
-      final currentIds = links.map((link) => link.workId).toSet();
-      for (final workId in _selectedWorkIds.difference(currentIds)) {
-        await linksDao.insertLink(
-          AnalysisWorksCompanion(
-            analysisId: Value(analysisId),
-            workId: Value(workId),
-          ),
+      final db = ref.read(appDatabaseProvider);
+      await db.transaction(() async {
+        await writeAnalysis(
+          db: db,
+          existing: existing,
+          title: title,
+          body: _bodyController.text,
+          workIds: _selectedWorkIds,
+          now: now,
         );
-      }
-      for (final workId in currentIds.difference(_selectedWorkIds)) {
-        await linksDao.deleteLink(analysisId, workId);
-      }
+      });
 
       _saved = true;
       if (leave && mounted) {

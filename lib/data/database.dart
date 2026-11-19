@@ -193,6 +193,9 @@ class QuotesDao extends DatabaseAccessor<AppDatabase> with _$QuotesDaoMixin {
   Stream<List<Quote>> watchByNote(int noteId) =>
       (select(quotes)..where((t) => t.noteId.equals(noteId))).watch();
 
+  Future<List<Quote>> getByNote(int noteId) =>
+      (select(quotes)..where((t) => t.noteId.equals(noteId))).get();
+
   Future<int> insertQuote(QuotesCompanion quote) => into(quotes).insert(quote);
 
   Future<bool> updateQuote(Quote quote) => update(quotes).replace(quote);
@@ -230,6 +233,10 @@ class AnalysisWorksDao extends DatabaseAccessor<AppDatabase>
   Stream<List<AnalysisWork>> watchByAnalysis(int analysisId) =>
       (select(analysisWorks)..where((t) => t.analysisId.equals(analysisId)))
           .watch();
+
+  Future<List<AnalysisWork>> getByAnalysis(int analysisId) =>
+      (select(analysisWorks)..where((t) => t.analysisId.equals(analysisId)))
+          .get();
 
   Stream<List<AnalysisWork>> watchByWork(int workId) =>
       (select(analysisWorks)..where((t) => t.workId.equals(workId))).watch();

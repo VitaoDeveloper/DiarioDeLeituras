@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,10 +61,7 @@ class _NotesFormScreenState extends ConsumerState<NotesFormScreen> {
         if (note == null || !mounted) return;
         setState(() => _fill(note));
         try {
-          final quotes = await ref
-              .read(quotesDaoProvider)
-              .watchByNote(note.id)
-              .first;
+          final quotes = await ref.read(quotesDaoProvider).getByNote(note.id);
           if (!mounted) return;
           setState(() {
             _quotes = [
@@ -169,25 +165,9 @@ class _NotesFormScreenState extends ConsumerState<NotesFormScreen> {
 
     try {
       final now = DateTime.now();
-      final notesDao = ref.read(notesDaoProvider);
-      final quotesDao = ref.read(quotesDaoProvider);
-
-      final int noteId;
-      if (widget.noteId == null) {
-        noteId = await notesDao.insertNote(
-          NotesCompanion(
-            workId: Value(_workId!),
-            label: Value(_labelController.text.trim()),
-            summary: Value(_summaryController.text.trim()),
-            thesis: Value(_thesisController.text.trim()),
-            concepts: Value(_conceptsController.text.trim()),
-            critique: Value(_critiqueController.text.trim()),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-      } else {
-        final existing = await notesDao.findById(widget.noteId!);
+      Note? existing;
+      if (widget.noteId != null) {
+        existing = await ref.read(notesDaoProvider).findById(widget.noteId!);
         if (existing == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -196,53 +176,38 @@ class _NotesFormScreenState extends ConsumerState<NotesFormScreen> {
           }
           return;
         }
-        noteId = existing.id;
-        await notesDao.updateNote(
-          existing.copyWith(
-            workId: _workId!,
-            label: _labelController.text.trim(),
-            summary: _summaryController.text.trim(),
-            thesis: _thesisController.text.trim(),
-            concepts: _conceptsController.text.trim(),
-            critique: _critiqueController.text.trim(),
-            updatedAt: now,
+      }
+
+      final quotes = [
+        for (final draft in _quotes)
+          QuoteWrite(
+            original: draft.original,
+            content: draft.textController.text.trim(),
+            page: draft.pageController.text.trim().isEmpty
+                ? null
+                : int.parse(draft.pageController.text.trim()),
+            comment: draft.commentController.text.trim().isEmpty
+                ? null
+                : draft.commentController.text.trim(),
           ),
+      ];
+
+      final db = ref.read(appDatabaseProvider);
+      await db.transaction(() async {
+        await writeNote(
+          db: db,
+          existing: existing,
+          workId: _workId!,
+          label: _labelController.text.trim(),
+          summary: _summaryController.text.trim(),
+          thesis: _thesisController.text.trim(),
+          concepts: _conceptsController.text.trim(),
+          critique: _critiqueController.text.trim(),
+          quotes: quotes,
+          originalQuoteIds: _originalQuoteIds,
+          now: now,
         );
-      }
-
-      final keptQuoteIds = <int>{};
-      for (final draft in _quotes) {
-        final pageText = draft.pageController.text.trim();
-        final page = pageText.isEmpty ? null : int.parse(pageText);
-        final commentText = draft.commentController.text.trim();
-        final comment = commentText.isEmpty ? null : commentText;
-        final text = draft.textController.text.trim();
-        final original = draft.original;
-
-        if (original == null) {
-          await quotesDao.insertQuote(
-            QuotesCompanion(
-              noteId: Value(noteId),
-              content: Value(text),
-              page: Value(page),
-              comment: Value(comment),
-            ),
-          );
-        } else {
-          await quotesDao.updateQuote(
-            original.copyWith(
-              content: text,
-              page: Value(page),
-              comment: Value(comment),
-            ),
-          );
-          keptQuoteIds.add(original.id);
-        }
-      }
-
-      for (final id in _originalQuoteIds.difference(keptQuoteIds)) {
-        await quotesDao.deleteQuote(id);
-      }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
