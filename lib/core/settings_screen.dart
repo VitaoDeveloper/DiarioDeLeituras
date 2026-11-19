@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/backup_service.dart';
+import 'app_drawer_button.dart';
 import 'router.dart';
 import 'strings.dart';
 
@@ -78,11 +79,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.settings),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-          onPressed: openAppDrawer,
-        ),
+        leading: const AppDrawerButton(),
       ),
       body: ListView(
         children: [

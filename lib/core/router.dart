@@ -140,11 +140,15 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const SettingsScreen(),
+            ),
+          ],
+        ),
       ],
-    ),
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );
@@ -167,11 +171,6 @@ class _ScaffoldWithDrawer extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
 
     void goBranch(int index) {
-      if (index >= 4) {
-        Navigator.of(context).pop();
-        context.go('/settings');
-        return;
-      }
       navigationShell.goBranch(
         index,
         initialLocation: index == navigationShell.currentIndex,

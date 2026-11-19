@@ -73,76 +73,65 @@ class _WorksScreenState extends ConsumerState<WorksScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 600;
-                final filterWidth = wide
-                    ? (constraints.maxWidth - 16) / 3
-                    : (constraints.maxWidth - 8) / 2;
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    SizedBox(
-                      width: filterWidth,
-                      child: DropdownMenu<String?>(
-                        label: const Text(AppStrings.statusFilter),
-                        initialSelection: _status,
-                        dropdownMenuEntries: [
-                          const DropdownMenuEntry<String?>(
-                            value: null,
-                            label: AppStrings.all,
-                          ),
-                          for (final status in WorkStatus.values)
-                            DropdownMenuEntry<String?>(
-                              value: status,
-                              label: AppStrings.workStatusLabel(status),
-                            ),
-                        ],
-                        onSelected: (value) => setState(() => _status = value),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownMenu<String?>(
+                    label: const Text(AppStrings.statusFilter),
+                    initialSelection: _status,
+                    dropdownMenuEntries: [
+                      const DropdownMenuEntry<String?>(
+                        value: null,
+                        label: AppStrings.all,
                       ),
-                    ),
-                    SizedBox(
-                      width: filterWidth,
-                      child: DropdownMenu<String?>(
-                        label: const Text(AppStrings.typeFilter),
-                        initialSelection: _type,
-                        dropdownMenuEntries: [
-                          const DropdownMenuEntry<String?>(
-                            value: null,
-                            label: AppStrings.all,
-                          ),
-                          for (final type in WorkType.values)
-                            DropdownMenuEntry<String?>(
-                              value: type,
-                              label: AppStrings.workTypeLabel(type),
-                            ),
-                        ],
-                        onSelected: (value) => setState(() => _type = value),
+                      for (final status in WorkStatus.values)
+                        DropdownMenuEntry<String?>(
+                          value: status,
+                          label: AppStrings.workStatusLabel(status),
+                        ),
+                    ],
+                    onSelected: (value) => setState(() => _status = value),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownMenu<String?>(
+                    label: const Text(AppStrings.typeFilter),
+                    initialSelection: _type,
+                    dropdownMenuEntries: [
+                      const DropdownMenuEntry<String?>(
+                        value: null,
+                        label: AppStrings.all,
                       ),
-                    ),
-                    SizedBox(
-                      width: filterWidth,
-                      child: DropdownMenu<String?>(
-                        label: const Text(AppStrings.genreFilter),
-                        initialSelection: _genre,
-                        dropdownMenuEntries: [
-                          const DropdownMenuEntry<String?>(
-                            value: null,
-                            label: AppStrings.all,
-                          ),
-                          for (final genre in genres)
-                            DropdownMenuEntry<String?>(
-                              value: genre,
-                              label: genre,
-                            ),
-                        ],
-                        onSelected: (value) => setState(() => _genre = value),
+                      for (final type in WorkType.values)
+                        DropdownMenuEntry<String?>(
+                          value: type,
+                          label: AppStrings.workTypeLabel(type),
+                        ),
+                    ],
+                    onSelected: (value) => setState(() => _type = value),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownMenu<String?>(
+                    label: const Text(AppStrings.genreFilter),
+                    initialSelection: _genre,
+                    dropdownMenuEntries: [
+                      const DropdownMenuEntry<String?>(
+                        value: null,
+                        label: AppStrings.all,
                       ),
-                    ),
-                  ],
-                );
-              },
+                      for (final genre in genres)
+                        DropdownMenuEntry<String?>(
+                          value: genre,
+                          label: genre,
+                        ),
+                    ],
+                    onSelected: (value) => setState(() => _genre = value),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(

@@ -108,27 +108,32 @@ ThemeData buildTheme(Brightness brightness) {
       scrolledUnderElevation: 0,
       centerTitle: false,
     ),
-    navigationBarTheme: NavigationBarThemeData(
+    drawerTheme: DrawerThemeData(
       backgroundColor: palette.surface,
       surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.transparent,
       elevation: 0,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      scrimColor: palette.onBackground.withValues(alpha: 0.32),
+    ),
+    navigationDrawerTheme: NavigationDrawerThemeData(
+      backgroundColor: palette.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
       indicatorColor: palette.accent.withValues(alpha: isDark ? 0.30 : 0.16),
       indicatorShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTokens.radius),
       ),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return textTheme.labelLarge!.copyWith(
+          color: selected ? palette.accent : palette.onSurfaceVariant,
+        );
+      }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
           color: selected ? palette.accent : palette.onSurfaceVariant,
           size: AppTokens.iconSize,
-        );
-      }),
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return textTheme.labelLarge!.copyWith(
-          color: selected ? palette.accent : palette.onSurfaceVariant,
         );
       }),
     ),
@@ -206,12 +211,15 @@ ThemeData buildTheme(Brightness brightness) {
         enabledBorder: _fieldBorder(border),
         focusedBorder: _fieldBorder(focusedBorder),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppTokens.screenMargin,
+          horizontal: AppTokens.filterHorizontalPadding,
           vertical: AppTokens.space + AppTokens.borderWidth,
         ),
         constraints: const BoxConstraints(minHeight: AppTokens.minFilterHeight),
       ),
-      textStyle: textTheme.bodyLarge!.copyWith(color: palette.onBackground),
+      textStyle: textTheme.bodyLarge!.copyWith(
+        color: palette.onBackground,
+        overflow: TextOverflow.ellipsis,
+      ),
       menuStyle: MenuStyle(
         backgroundColor: WidgetStateProperty.all(palette.surface),
         surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
