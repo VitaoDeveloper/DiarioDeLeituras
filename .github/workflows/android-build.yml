@@ -1,6 +1,9 @@
 name: Build Flutter Android
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
