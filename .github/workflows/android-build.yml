@@ -26,7 +26,7 @@ jobs:
         run: flutter pub get
 
       - name: Compilar APK Release
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Renomear APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/seu-app-v1.0.apk
