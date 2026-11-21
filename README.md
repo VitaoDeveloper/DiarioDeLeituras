@@ -21,8 +21,8 @@ nuvem, sincronização ou consultas a APIs externas.
 - **Leituras e releituras:** cada obra pode ter vários ciclos numerados, cada
   um com status, nota, datas de início/fim, progresso e sessões próprias.
 - **Sessões de leitura:** registro de páginas lidas por data dentro de uma
-  leitura, com aviso (sem bloqueio) quando a soma ultrapassa o total de
-  páginas da obra.
+  leitura, com validação que impede a soma da leitura de ultrapassar o total
+  de páginas da obra.
 - **Fichamentos:** vários por obra, com rótulo, resumo, tese, conceitos,
   crítica e uma lista de citações com página e comentário.
 - **Análises:** texto livre com título, vínculo opcional com várias obras e

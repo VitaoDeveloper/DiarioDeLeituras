@@ -169,6 +169,8 @@ abstract final class AppStrings {
   static const String pagesWithoutTotal = 'páginas lidas';
   static const String pagesOverflow =
       'As sessões somam mais páginas do que o total da obra.';
+  static const String pagesOverflowValidation =
+      'A soma das páginas não pode ultrapassar o total da obra.';
 
   static const String linkedNotes = 'Fichamentos desta obra';
   static const String linkedAnalyses = 'Análises desta obra';

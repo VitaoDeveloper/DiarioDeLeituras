@@ -54,6 +54,11 @@ class _ReadingSessionFormDialogState
   String? _validatePages(String? value) {
     final pages = int.tryParse(value?.trim() ?? '');
     if (pages == null || pages <= 0) return AppStrings.invalidPagesRead;
+    // Em edição, `currentTotal` já desconta a página da sessão atual.
+    final total = widget.work.pages;
+    if (total != null && widget.currentTotal + pages > total) {
+      return AppStrings.pagesOverflowValidation;
+    }
     return null;
   }
 
@@ -95,17 +100,9 @@ class _ReadingSessionFormDialogState
       }
 
       if (!mounted) return;
-      final difference = session == null ? pages : pages - session.pagesRead;
-      final projected = widget.currentTotal + difference;
-      if (widget.work.pages != null && projected > widget.work.pages!) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.pagesOverflow)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.sessionSaved)),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.sessionSaved)),
+      );
       Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
