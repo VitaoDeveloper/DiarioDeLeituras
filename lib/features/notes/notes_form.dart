@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/confirm_dialog.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
 import '../works/works_providers.dart';
@@ -128,22 +129,11 @@ class _NotesFormScreenState extends ConsumerState<NotesFormScreen> {
   Future<void> _removeQuote(int index) async {
     final draft = _quotes[index];
     if (draft.original != null) {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showConfirmDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(AppStrings.deleteQuoteTitle),
-          content: const Text(AppStrings.deleteQuoteBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(AppStrings.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(AppStrings.removeQuote),
-            ),
-          ],
-        ),
+        title: AppStrings.deleteQuoteTitle,
+        content: const Text(AppStrings.deleteQuoteBody),
+        confirmLabel: AppStrings.removeQuote,
       );
       if (confirmed != true || !mounted) return;
     }
@@ -227,22 +217,10 @@ class _NotesFormScreenState extends ConsumerState<NotesFormScreen> {
   }
 
   Future<void> _deleteNote() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(AppStrings.deleteNoteTitle),
-        content: const Text(AppStrings.deleteNoteBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(AppStrings.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(AppStrings.delete),
-          ),
-        ],
-      ),
+      title: AppStrings.deleteNoteTitle,
+      content: const Text(AppStrings.deleteNoteBody),
     );
     if (confirmed != true || !mounted) return;
     try {

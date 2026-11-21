@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/confirm_dialog.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
@@ -47,22 +48,10 @@ class WorkDetailScreen extends ConsumerWidget {
         }
         return;
       }
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showConfirmDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(AppStrings.deleteReadingTitle),
-          content: const Text(AppStrings.deleteReadingBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(AppStrings.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(AppStrings.delete),
-            ),
-          ],
-        ),
+        title: AppStrings.deleteReadingTitle,
+        content: const Text(AppStrings.deleteReadingBody),
       );
       if (confirmed != true || !context.mounted) return;
       try {
@@ -80,22 +69,10 @@ class WorkDetailScreen extends ConsumerWidget {
     }
 
     Future<void> confirmDeleteSession(ReadingSession session) async {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showConfirmDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(AppStrings.deleteSessionTitle),
-          content: const Text(AppStrings.deleteSessionBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(AppStrings.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(AppStrings.delete),
-            ),
-          ],
-        ),
+        title: AppStrings.deleteSessionTitle,
+        content: const Text(AppStrings.deleteSessionBody),
       );
       if (confirmed != true || !context.mounted) return;
       try {
@@ -110,22 +87,10 @@ class WorkDetailScreen extends ConsumerWidget {
     }
 
     Future<void> confirmDeleteWork(Work work) async {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showConfirmDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(AppStrings.deleteWorkTitle),
-          content: const Text(AppStrings.deleteWorkBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(AppStrings.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(AppStrings.delete),
-            ),
-          ],
-        ),
+        title: AppStrings.deleteWorkTitle,
+        content: const Text(AppStrings.deleteWorkBody),
       );
       if (confirmed != true || !context.mounted) return;
       try {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/confirm_dialog.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
 import '../works/works_providers.dart';
@@ -148,22 +149,10 @@ class _AnalysisFormScreenState extends ConsumerState<AnalysisFormScreen> {
   Future<void> _delete() async {
     final analysisId = widget.analysisId;
     if (analysisId == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(AppStrings.deleteAnalysisTitle),
-        content: const Text(AppStrings.deleteAnalysisBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(AppStrings.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(AppStrings.delete),
-          ),
-        ],
-      ),
+      title: AppStrings.deleteAnalysisTitle,
+      content: const Text(AppStrings.deleteAnalysisBody),
     );
     if (confirmed != true || !mounted) return;
     setState(() => _saving = true);

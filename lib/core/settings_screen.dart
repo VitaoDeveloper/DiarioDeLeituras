@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/backup_service.dart';
 import 'app_drawer_button.dart';
+import 'confirm_dialog.dart';
 import 'router.dart';
 import 'strings.dart';
 
@@ -33,37 +34,26 @@ class SettingsScreen extends ConsumerWidget {
     try {
       final data = await ref.read(backupServiceProvider).pickBackup();
       if (data == null || !context.mounted) return;
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showConfirmDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(AppStrings.importTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(AppStrings.importConfirmation),
-              const SizedBox(height: 8),
-              Text(
-                AppStrings.importSummary(
-                  data.workCount,
-                  data.readingCount,
-                  data.noteCount,
-                  data.analysisCount,
-                ),
+        title: AppStrings.importTitle,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(AppStrings.importConfirmation),
+            const SizedBox(height: 8),
+            Text(
+              AppStrings.importSummary(
+                data.workCount,
+                data.readingCount,
+                data.noteCount,
+                data.analysisCount,
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(AppStrings.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(AppStrings.confirm),
             ),
           ],
         ),
+        confirmLabel: AppStrings.confirm,
       );
       if (confirmed != true || !context.mounted) return;
       await ref.read(backupServiceProvider).importBackup(data);
