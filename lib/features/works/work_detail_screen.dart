@@ -24,6 +24,14 @@ class WorkDetailScreen extends ConsumerWidget {
     final notesAsync = ref.watch(notesForWorkProvider(workId));
     final analyses = ref.watch(analysesForWorkProvider(workId));
 
+    void showMessage(String message) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    }
+
     Future<void> openReadingDialog(
       Work work, {
       Reading? reading,
@@ -41,11 +49,7 @@ class WorkDetailScreen extends ConsumerWidget {
 
     Future<void> confirmDeleteReading(Reading reading, int count) async {
       if (count <= 1) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(AppStrings.lastReadingError)),
-          );
-        }
+        showMessage(AppStrings.lastReadingError);
         return;
       }
       final confirmed = await showConfirmDialog(
@@ -53,18 +57,18 @@ class WorkDetailScreen extends ConsumerWidget {
         title: AppStrings.deleteReadingTitle,
         content: const Text(AppStrings.deleteReadingBody),
       );
-      if (confirmed != true || !context.mounted) return;
+      if (confirmed != true) return;
       try {
         await deleteReading(
           db: ref.read(appDatabaseProvider),
           readingId: reading.id,
         );
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(AppStrings.deleteError)),
-          );
-        }
+      } on LastReadingException {
+        showMessage(AppStrings.lastReadingError);
+        return;
+      } catch (error) {
+        debugPrint('Falha ao excluir leitura: $error');
+        showMessage(AppStrings.deleteError);
       }
     }
 
@@ -74,15 +78,12 @@ class WorkDetailScreen extends ConsumerWidget {
         title: AppStrings.deleteSessionTitle,
         content: const Text(AppStrings.deleteSessionBody),
       );
-      if (confirmed != true || !context.mounted) return;
+      if (confirmed != true) return;
       try {
         await ref.read(readingSessionsDaoProvider).deleteSession(session.id);
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(AppStrings.deleteError)),
-          );
-        }
+      } catch (error) {
+        debugPrint('Falha ao excluir sessão: $error');
+        showMessage(AppStrings.deleteError);
       }
     }
 
@@ -92,16 +93,13 @@ class WorkDetailScreen extends ConsumerWidget {
         title: AppStrings.deleteWorkTitle,
         content: const Text(AppStrings.deleteWorkBody),
       );
-      if (confirmed != true || !context.mounted) return;
+      if (confirmed != true) return;
       try {
         await ref.read(worksDaoProvider).deleteWork(work.id);
         if (context.mounted) context.go('/works');
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(AppStrings.deleteError)),
-          );
-        }
+      } catch (error) {
+        debugPrint('Falha ao excluir obra: $error');
+        showMessage(AppStrings.deleteError);
       }
     }
 
