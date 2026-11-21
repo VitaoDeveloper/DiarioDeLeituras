@@ -6,7 +6,9 @@ import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
 import '../notes/notes_providers.dart';
+import 'reading_form.dart';
 import 'reading_session_form.dart';
+import 'readings_providers.dart';
 import 'works_providers.dart';
 
 class WorkDetailScreen extends ConsumerWidget {
@@ -17,26 +19,64 @@ class WorkDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workAsync = ref.watch(workProvider(workId));
-    final sessionsAsync = ref.watch(sessionsForWorkProvider(workId));
+    final readingsAsync = ref.watch(readingsForWorkProvider(workId));
     final notesAsync = ref.watch(notesForWorkProvider(workId));
     final analyses = ref.watch(analysesForWorkProvider(workId));
 
-    Future<void> openSessionDialog(
-      Work work,
-      List<ReadingSession> sessions, {
-      ReadingSession? session,
+    Future<void> openReadingDialog(
+      Work work, {
+      Reading? reading,
+      required int number,
     }) async {
-      final total = sessions
-          .where((item) => item.id != session?.id)
-          .fold<int>(0, (sum, item) => sum + item.pagesRead);
       await showDialog<bool>(
         context: context,
-        builder: (_) => ReadingSessionFormDialog(
+        builder: (_) => ReadingFormDialog(
           work: work,
-          currentTotal: total,
-          session: session,
+          reading: reading,
+          number: number,
         ),
       );
+    }
+
+    Future<void> confirmDeleteReading(Reading reading, int count) async {
+      if (count <= 1) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(AppStrings.lastReadingError)),
+          );
+        }
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text(AppStrings.deleteReadingTitle),
+          content: const Text(AppStrings.deleteReadingBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(AppStrings.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(AppStrings.delete),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+      try {
+        await deleteReading(
+          db: ref.read(appDatabaseProvider),
+          readingId: reading.id,
+        );
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(AppStrings.deleteError)),
+          );
+        }
+      }
     }
 
     Future<void> confirmDeleteSession(ReadingSession session) async {
@@ -157,139 +197,90 @@ class WorkDetailScreen extends ConsumerWidget {
                       children: [
                         dataRow(
                           AppStrings.author,
-                          work.author.isEmpty ? AppStrings.noRatingValue : work.author,
+                          work.author.isEmpty
+                              ? AppStrings.noRatingValue
+                              : work.author,
                         ),
                         dataRow(
                           AppStrings.type,
                           AppStrings.workTypeLabel(work.type),
                         ),
                         dataRow(
-                          AppStrings.status,
-                          AppStrings.workStatusLabel(work.status),
-                        ),
-                        dataRow(
                           AppStrings.genre,
-                          work.genre.isEmpty ? AppStrings.noRatingValue : work.genre,
+                          work.genre.isEmpty
+                              ? AppStrings.noRatingValue
+                              : work.genre,
                         ),
                         dataRow(
                           AppStrings.year,
                           work.year?.toString() ?? AppStrings.noRatingValue,
                         ),
                         dataRow(
-                          AppStrings.rating,
-                          work.rating == null
-                              ? AppStrings.noRatingValue
-                              : formatRating(work.rating!),
-                        ),
-                        dataRow(
-                          AppStrings.startedAt,
-                          work.startedAt == null
-                              ? AppStrings.noRatingValue
-                              : formatDate(work.startedAt!),
-                        ),
-                        dataRow(
-                          AppStrings.finishedAt,
-                          work.finishedAt == null
-                              ? AppStrings.noRatingValue
-                              : formatDate(work.finishedAt!),
+                          AppStrings.pages,
+                          work.pages?.toString() ?? AppStrings.noRatingValue,
                         ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                sessionsAsync.when(
+                readingsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (_, _) =>
                       const Center(child: Text(AppStrings.loadError)),
-                  data: (sessions) {
-                    final total = sessions.fold<int>(
+                  data: (readings) {
+                    final nextNumber = readings.fold<int>(
                       0,
-                      (sum, session) => sum + session.pagesRead,
+                      (max, item) => item.number > max ? item.number : max,
                     );
-                    final overflow =
-                        work.pages != null && total > work.pages!;
-                    final progress = work.pages == null || work.pages == 0
-                        ? 0.0
-                        : (total / work.pages!).clamp(0.0, 1.0);
 
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              AppStrings.progress,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              work.pages == null
-                                  ? '$total ${AppStrings.pagesWithoutTotal}'
-                                  : '${AppStrings.pagesProgress} ${work.pages} '
-                                      '(${(progress * 100).round()}%)',
-                            ),
-                            if (work.pages != null) ...[
-                              const SizedBox(height: 8),
-                              LinearProgressIndicator(value: progress),
-                            ],
-                            if (overflow) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                AppStrings.pagesOverflow,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
+                            Expanded(
+                              child: Text(
+                                AppStrings.readings,
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
-                            ],
-                            const SizedBox(height: 16),
-                            FilledButton.icon(
-                              onPressed: () =>
-                                  openSessionDialog(work, sessions),
-                              icon: const Icon(Icons.add),
-                              label: const Text(AppStrings.registerSession),
                             ),
-                            if (sessions.isEmpty) ...[
-                              const SizedBox(height: 12),
-                              const Text(AppStrings.noSessions),
-                            ] else ...[
-                              const SizedBox(height: 8),
-                              for (final session in sessions)
-                                ListTile(
-                                  title: Text(
-                                    '${formatDate(session.date)} • '
-                                    '${session.pagesRead} ${AppStrings.pages.toLowerCase()}',
-                                  ),
-                                  subtitle: session.note == null
-                                      ? null
-                                      : Text(session.note!),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        onPressed: () => openSessionDialog(
-                                          work,
-                                          sessions,
-                                          session: session,
-                                        ),
-                                        icon: const Icon(Icons.edit),
-                                        tooltip: AppStrings.editSession,
-                                      ),
-                                      IconButton(
-                                        onPressed: () =>
-                                            confirmDeleteSession(session),
-                                        icon: const Icon(Icons.delete),
-                                        tooltip: AppStrings.delete,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
+                            FilledButton.icon(
+                              onPressed: () => openReadingDialog(
+                                work,
+                                number: nextNumber + 1,
+                              ),
+                              icon: const Icon(Icons.add),
+                              label: const Text(AppStrings.newReading),
+                            ),
                           ],
                         ),
-                      ),
+                        if (readings.isEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Text(AppStrings.noReadings),
+                        ] else ...[
+                          const SizedBox(height: 8),
+                          for (final reading in readings)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _ReadingSection(
+                                work: work,
+                                reading: reading,
+                                onEdit: () => openReadingDialog(
+                                  work,
+                                  reading: reading,
+                                  number: reading.number,
+                                ),
+                                onDelete: () => confirmDeleteReading(
+                                  reading,
+                                  readings.length,
+                                ),
+                                onDeleteSession: confirmDeleteSession,
+                              ),
+                            ),
+                        ],
+                      ],
                     );
                   },
                 ),
@@ -333,6 +324,195 @@ class WorkDetailScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ReadingSection extends ConsumerWidget {
+  const _ReadingSection({
+    required this.work,
+    required this.reading,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onDeleteSession,
+  });
+
+  final Work work;
+  final Reading reading;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final Future<void> Function(ReadingSession session) onDeleteSession;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionsAsync = ref.watch(sessionsForReadingProvider(reading.id));
+
+    Future<void> openSessionDialog(
+      List<ReadingSession> sessions, {
+      ReadingSession? session,
+    }) async {
+      final total = sessions
+          .where((item) => item.id != session?.id)
+          .fold<int>(0, (sum, item) => sum + item.pagesRead);
+      await showDialog<bool>(
+        context: context,
+        builder: (_) => ReadingSessionFormDialog(
+          work: work,
+          reading: reading,
+          currentTotal: total,
+          session: session,
+        ),
+      );
+    }
+
+    Widget row(String label, String value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 140, child: Text(label)),
+              Expanded(child: Text(value)),
+            ],
+          ),
+        );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    AppStrings.readingLabel(reading.number),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit),
+                  tooltip: AppStrings.editReading,
+                ),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete),
+                  tooltip: AppStrings.delete,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            row(
+              AppStrings.status,
+              AppStrings.workStatusLabel(reading.status),
+            ),
+            row(
+              AppStrings.rating,
+              reading.rating == null
+                  ? AppStrings.noRatingValue
+                  : formatRating(reading.rating!),
+            ),
+            row(
+              AppStrings.startedAt,
+              reading.startedAt == null
+                  ? AppStrings.noRatingValue
+                  : formatDate(reading.startedAt!),
+            ),
+            row(
+              AppStrings.finishedAt,
+              reading.finishedAt == null
+                  ? AppStrings.noRatingValue
+                  : formatDate(reading.finishedAt!),
+            ),
+            const SizedBox(height: 16),
+            sessionsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => const Center(child: Text(AppStrings.loadError)),
+              data: (sessions) {
+                final total = sessions.fold<int>(
+                  0,
+                  (sum, session) => sum + session.pagesRead,
+                );
+                final overflow = work.pages != null && total > work.pages!;
+                final progress = work.pages == null || work.pages == 0
+                    ? 0.0
+                    : (total / work.pages!).clamp(0.0, 1.0);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      AppStrings.progress,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      work.pages == null
+                          ? '$total ${AppStrings.pagesWithoutTotal}'
+                          : '${AppStrings.pagesProgress} ${work.pages} '
+                              '(${(progress * 100).round()}%)',
+                    ),
+                    if (work.pages != null) ...[
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(value: progress),
+                    ],
+                    if (overflow) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        AppStrings.pagesOverflow,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => openSessionDialog(sessions),
+                      icon: const Icon(Icons.add),
+                      label: const Text(AppStrings.registerSession),
+                    ),
+                    if (sessions.isEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Text(AppStrings.noSessions),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      for (final session in sessions)
+                        ListTile(
+                          title: Text(
+                            '${formatDate(session.date)} • '
+                            '${session.pagesRead} ${AppStrings.pages.toLowerCase()}',
+                          ),
+                          subtitle: session.note == null
+                              ? null
+                              : Text(session.note!),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () => openSessionDialog(
+                                  sessions,
+                                  session: session,
+                                ),
+                                icon: const Icon(Icons.edit),
+                                tooltip: AppStrings.editSession,
+                              ),
+                              IconButton(
+                                onPressed: () => onDeleteSession(session),
+                                icon: const Icon(Icons.delete),
+                                tooltip: AppStrings.delete,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

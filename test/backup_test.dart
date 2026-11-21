@@ -38,10 +38,23 @@ void main() {
             createdAt: Value(date),
           ),
         );
+    await db.into(db.readings).insert(
+          ReadingsCompanion(
+            id: const Value(1),
+            workId: const Value(1),
+            number: const Value(1),
+            status: Value(WorkStatus.lido),
+            rating: const Value(4.5),
+            startedAt: Value(date),
+            finishedAt: Value(date),
+            createdAt: Value(date),
+          ),
+        );
     await db.into(db.readingSessions).insert(
           ReadingSessionsCompanion(
             id: const Value(1),
             workId: const Value(1),
+            readingId: const Value(1),
             date: Value(date),
             pagesRead: const Value(50),
             note: const Value('Nota'),
@@ -92,6 +105,7 @@ void main() {
     final before = await service.exportJson();
     final parsed = parseBackup(before);
     expect(parsed.workCount, 1);
+    expect(parsed.readingCount, 1);
     expect(parsed.noteCount, 1);
     expect(parsed.analysisCount, 1);
 
@@ -108,8 +122,58 @@ void main() {
 
     await service.importBackup(backup);
     expect(await db.select(db.works).get(), hasLength(1));
+    expect(await db.select(db.readings).get(), hasLength(1));
+    expect(await db.select(db.readingSessions).get(), hasLength(1));
     expect(await db.select(db.notes).get(), hasLength(1));
     expect(await db.select(db.analyses).get(), hasLength(1));
+  });
+
+  test('backup legado é importado como a leitura original da obra', () async {
+    final legacy = jsonEncode({
+      'version': 1,
+      'works': [
+        {
+          'id': 1,
+          'type': WorkType.livro,
+          'title': 'Livro',
+          'author': 'Autor',
+          'genre': 'Gênero',
+          'year': 2020,
+          'pages': 100,
+          'status': WorkStatus.lido,
+          'rating': 4.5,
+          'startedAt': date.toIso8601String(),
+          'finishedAt': date.toIso8601String(),
+          'createdAt': date.toIso8601String(),
+        },
+      ],
+      'reading_sessions': [
+        {
+          'id': 1,
+          'workId': 1,
+          'readingId': null,
+          'date': date.toIso8601String(),
+          'pagesRead': 30,
+          'note': null,
+        },
+      ],
+      'notes': [],
+      'quotes': [],
+      'analyses': [],
+      'analysis_works': [],
+    });
+
+    final parsed = parseBackup(legacy);
+    expect(parsed.readingCount, 1);
+    expect(parsed.readings.single.status, WorkStatus.lido);
+    expect(parsed.sessions.single.readingId, 1);
+
+    await service.importBackup(parsed);
+    final readings = await db.select(db.readings).get();
+    expect(readings, hasLength(1));
+    expect(readings.single.number, 1);
+    final sessions = await db.select(db.readingSessions).get();
+    expect(sessions.single.readingId, readings.single.id);
   });
 
   test('importação inválida não altera os dados', () async {
@@ -118,6 +182,7 @@ void main() {
     final badData = parseBackup(before);
     final broken = BackupData(
       works: badData.works,
+      readings: badData.readings,
       sessions: badData.sessions,
       notes: badData.notes,
       quotes: badData.quotes,

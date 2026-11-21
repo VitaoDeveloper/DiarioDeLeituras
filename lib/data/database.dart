@@ -48,12 +48,42 @@ class Works extends Table {
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
 }
 
+/// Um ciclo de leitura de uma obra. A mesma obra pode ter várias leituras
+/// (releituras), cada uma com seu próprio status, nota e período.
+@DataClassName('Reading')
+class Readings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get workId =>
+      integer().references(Works, #id, onDelete: KeyAction.cascade)();
+
+  /// Número sequencial da leitura dentro da obra (1, 2, 3...).
+  IntColumn get number => integer()();
+
+  TextColumn get status =>
+      text().withDefault(const Constant(WorkStatus.queroLer))();
+
+  RealColumn get rating => real().nullable()();
+
+  DateTimeColumn get startedAt => dateTime().nullable()();
+
+  DateTimeColumn get finishedAt => dateTime().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+}
+
 @DataClassName('ReadingSession')
 class ReadingSessions extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   IntColumn get workId =>
       integer().references(Works, #id, onDelete: KeyAction.cascade)();
+
+  /// Leitura à qual a sessão pertence. Pode ser nulo apenas em dados antigos
+  /// importados antes do suporte a releituras.
+  IntColumn get readingId => integer()
+      .nullable()
+      .references(Readings, #id, onDelete: KeyAction.cascade)();
 
   DateTimeColumn get date => dateTime()();
 
@@ -143,6 +173,44 @@ class WorksDao extends DatabaseAccessor<AppDatabase> with _$WorksDaoMixin {
       (delete(works)..where((t) => t.id.equals(id))).go();
 }
 
+@DriftAccessor(tables: [Readings])
+class ReadingsDao extends DatabaseAccessor<AppDatabase>
+    with _$ReadingsDaoMixin {
+  ReadingsDao(super.db);
+
+  Stream<List<Reading>> watchAll() => (select(readings)
+        ..orderBy([
+          (t) => OrderingTerm.asc(t.workId),
+          (t) => OrderingTerm.asc(t.number),
+        ]))
+      .watch();
+
+  Stream<List<Reading>> watchByWork(int workId) => (select(readings)
+        ..where((t) => t.workId.equals(workId))
+        ..orderBy([(t) => OrderingTerm.asc(t.number)]))
+      .watch();
+
+  Future<List<Reading>> getByWork(int workId) => (select(readings)
+        ..where((t) => t.workId.equals(workId))
+        ..orderBy([(t) => OrderingTerm.asc(t.number)]))
+      .get();
+
+  Future<Reading?> findById(int id) =>
+      (select(readings)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Stream<Reading?> watchById(int id) =>
+      (select(readings)..where((t) => t.id.equals(id))).watchSingleOrNull();
+
+  Future<int> insertReading(ReadingsCompanion reading) =>
+      into(readings).insert(reading);
+
+  Future<bool> updateReading(Reading reading) =>
+      update(readings).replace(reading);
+
+  Future<int> deleteReading(int id) =>
+      (delete(readings)..where((t) => t.id.equals(id))).go();
+}
+
 @DriftAccessor(tables: [ReadingSessions])
 class ReadingSessionsDao extends DatabaseAccessor<AppDatabase>
     with _$ReadingSessionsDaoMixin {
@@ -152,6 +220,12 @@ class ReadingSessionsDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<ReadingSession>> watchByWork(int workId) =>
       (select(readingSessions)..where((t) => t.workId.equals(workId))).watch();
+
+  Stream<List<ReadingSession>> watchByReading(int readingId) =>
+      (select(readingSessions)
+            ..where((t) => t.readingId.equals(readingId))
+            ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .watch();
 
   Future<int> insertSession(ReadingSessionsCompanion session) =>
       into(readingSessions).insert(session);
@@ -257,9 +331,18 @@ class AnalysisWorksDao extends DatabaseAccessor<AppDatabase>
 }
 
 @DriftDatabase(
-  tables: [Works, ReadingSessions, Notes, Quotes, Analyses, AnalysisWorks],
+  tables: [
+    Works,
+    Readings,
+    ReadingSessions,
+    Notes,
+    Quotes,
+    Analyses,
+    AnalysisWorks,
+  ],
   daos: [
     WorksDao,
+    ReadingsDao,
     ReadingSessionsDao,
     NotesDao,
     QuotesDao,
@@ -284,11 +367,39 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.connect(super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
+        onUpgrade: (m, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await m.createTable(readings);
+            await m.addColumn(readingSessions, readingSessions.readingId);
+
+            // Cada obra existente passa a ter uma leitura (a original), com o
+            // status, a nota e as datas que antes viviam na própria obra.
+            final existingWorks = await select(works).get();
+            for (final work in existingWorks) {
+              final readingId = await into(readings).insert(
+                ReadingsCompanion(
+                  workId: Value(work.id),
+                  number: const Value(1),
+                  status: Value(work.status),
+                  rating: Value(work.rating),
+                  startedAt: Value(work.startedAt),
+                  finishedAt: Value(work.finishedAt),
+                  createdAt: Value(work.createdAt),
+                ),
+              );
+              await (update(readingSessions)
+                    ..where((session) => session.workId.equals(work.id)))
+                  .write(
+                ReadingSessionsCompanion(readingId: Value(readingId)),
+              );
+            }
+          }
+        },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },

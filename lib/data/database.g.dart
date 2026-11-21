@@ -15,8 +15,24 @@ class WorksDaoManager {
       $$WorksTableTableManager(_db.attachedDatabase, _db.works);
 }
 
+mixin _$ReadingsDaoMixin on DatabaseAccessor<AppDatabase> {
+  $WorksTable get works => attachedDatabase.works;
+  $ReadingsTable get readings => attachedDatabase.readings;
+  ReadingsDaoManager get managers => ReadingsDaoManager(this);
+}
+
+class ReadingsDaoManager {
+  final _$ReadingsDaoMixin _db;
+  ReadingsDaoManager(this._db);
+  $$WorksTableTableManager get works =>
+      $$WorksTableTableManager(_db.attachedDatabase, _db.works);
+  $$ReadingsTableTableManager get readings =>
+      $$ReadingsTableTableManager(_db.attachedDatabase, _db.readings);
+}
+
 mixin _$ReadingSessionsDaoMixin on DatabaseAccessor<AppDatabase> {
   $WorksTable get works => attachedDatabase.works;
+  $ReadingsTable get readings => attachedDatabase.readings;
   $ReadingSessionsTable get readingSessions => attachedDatabase.readingSessions;
   ReadingSessionsDaoManager get managers => ReadingSessionsDaoManager(this);
 }
@@ -26,6 +42,8 @@ class ReadingSessionsDaoManager {
   ReadingSessionsDaoManager(this._db);
   $$WorksTableTableManager get works =>
       $$WorksTableTableManager(_db.attachedDatabase, _db.works);
+  $$ReadingsTableTableManager get readings =>
+      $$ReadingsTableTableManager(_db.attachedDatabase, _db.readings);
   $$ReadingSessionsTableTableManager get readingSessions =>
       $$ReadingSessionsTableTableManager(
         _db.attachedDatabase,
@@ -772,6 +790,505 @@ class WorksCompanion extends UpdateCompanion<Work> {
   }
 }
 
+class $ReadingsTable extends Readings with TableInfo<$ReadingsTable, Reading> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _workIdMeta = const VerificationMeta('workId');
+  @override
+  late final GeneratedColumn<int> workId = GeneratedColumn<int>(
+    'work_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES works (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(WorkStatus.queroLer),
+  );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<double> rating = GeneratedColumn<double>(
+    'rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _finishedAtMeta = const VerificationMeta(
+    'finishedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> finishedAt = GeneratedColumn<DateTime>(
+    'finished_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: DateTime.now,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workId,
+    number,
+    status,
+    rating,
+    startedAt,
+    finishedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'readings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Reading> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('work_id')) {
+      context.handle(
+        _workIdMeta,
+        workId.isAcceptableOrUnknown(data['work_id']!, _workIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_workIdMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    }
+    if (data.containsKey('finished_at')) {
+      context.handle(
+        _finishedAtMeta,
+        finishedAt.isAcceptableOrUnknown(data['finished_at']!, _finishedAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Reading map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Reading(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      workId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}work_id'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rating'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      ),
+      finishedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}finished_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingsTable createAlias(String alias) {
+    return $ReadingsTable(attachedDatabase, alias);
+  }
+}
+
+class Reading extends DataClass implements Insertable<Reading> {
+  final int id;
+  final int workId;
+
+  /// Número sequencial da leitura dentro da obra (1, 2, 3...).
+  final int number;
+  final String status;
+  final double? rating;
+  final DateTime? startedAt;
+  final DateTime? finishedAt;
+  final DateTime createdAt;
+  const Reading({
+    required this.id,
+    required this.workId,
+    required this.number,
+    required this.status,
+    this.rating,
+    this.startedAt,
+    this.finishedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['work_id'] = Variable<int>(workId);
+    map['number'] = Variable<int>(number);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || rating != null) {
+      map['rating'] = Variable<double>(rating);
+    }
+    if (!nullToAbsent || startedAt != null) {
+      map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || finishedAt != null) {
+      map['finished_at'] = Variable<DateTime>(finishedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ReadingsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingsCompanion(
+      id: Value(id),
+      workId: Value(workId),
+      number: Value(number),
+      status: Value(status),
+      rating: rating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rating),
+      startedAt: startedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAt),
+      finishedAt: finishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(finishedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Reading.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Reading(
+      id: serializer.fromJson<int>(json['id']),
+      workId: serializer.fromJson<int>(json['workId']),
+      number: serializer.fromJson<int>(json['number']),
+      status: serializer.fromJson<String>(json['status']),
+      rating: serializer.fromJson<double?>(json['rating']),
+      startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      finishedAt: serializer.fromJson<DateTime?>(json['finishedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'workId': serializer.toJson<int>(workId),
+      'number': serializer.toJson<int>(number),
+      'status': serializer.toJson<String>(status),
+      'rating': serializer.toJson<double?>(rating),
+      'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'finishedAt': serializer.toJson<DateTime?>(finishedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Reading copyWith({
+    int? id,
+    int? workId,
+    int? number,
+    String? status,
+    Value<double?> rating = const Value.absent(),
+    Value<DateTime?> startedAt = const Value.absent(),
+    Value<DateTime?> finishedAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => Reading(
+    id: id ?? this.id,
+    workId: workId ?? this.workId,
+    number: number ?? this.number,
+    status: status ?? this.status,
+    rating: rating.present ? rating.value : this.rating,
+    startedAt: startedAt.present ? startedAt.value : this.startedAt,
+    finishedAt: finishedAt.present ? finishedAt.value : this.finishedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Reading copyWithCompanion(ReadingsCompanion data) {
+    return Reading(
+      id: data.id.present ? data.id.value : this.id,
+      workId: data.workId.present ? data.workId.value : this.workId,
+      number: data.number.present ? data.number.value : this.number,
+      status: data.status.present ? data.status.value : this.status,
+      rating: data.rating.present ? data.rating.value : this.rating,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      finishedAt: data.finishedAt.present
+          ? data.finishedAt.value
+          : this.finishedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Reading(')
+          ..write('id: $id, ')
+          ..write('workId: $workId, ')
+          ..write('number: $number, ')
+          ..write('status: $status, ')
+          ..write('rating: $rating, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workId,
+    number,
+    status,
+    rating,
+    startedAt,
+    finishedAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Reading &&
+          other.id == this.id &&
+          other.workId == this.workId &&
+          other.number == this.number &&
+          other.status == this.status &&
+          other.rating == this.rating &&
+          other.startedAt == this.startedAt &&
+          other.finishedAt == this.finishedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class ReadingsCompanion extends UpdateCompanion<Reading> {
+  final Value<int> id;
+  final Value<int> workId;
+  final Value<int> number;
+  final Value<String> status;
+  final Value<double?> rating;
+  final Value<DateTime?> startedAt;
+  final Value<DateTime?> finishedAt;
+  final Value<DateTime> createdAt;
+  const ReadingsCompanion({
+    this.id = const Value.absent(),
+    this.workId = const Value.absent(),
+    this.number = const Value.absent(),
+    this.status = const Value.absent(),
+    this.rating = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ReadingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int workId,
+    required int number,
+    this.status = const Value.absent(),
+    this.rating = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : workId = Value(workId),
+       number = Value(number);
+  static Insertable<Reading> custom({
+    Expression<int>? id,
+    Expression<int>? workId,
+    Expression<int>? number,
+    Expression<String>? status,
+    Expression<double>? rating,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? finishedAt,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workId != null) 'work_id': workId,
+      if (number != null) 'number': number,
+      if (status != null) 'status': status,
+      if (rating != null) 'rating': rating,
+      if (startedAt != null) 'started_at': startedAt,
+      if (finishedAt != null) 'finished_at': finishedAt,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ReadingsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? workId,
+    Value<int>? number,
+    Value<String>? status,
+    Value<double?>? rating,
+    Value<DateTime?>? startedAt,
+    Value<DateTime?>? finishedAt,
+    Value<DateTime>? createdAt,
+  }) {
+    return ReadingsCompanion(
+      id: id ?? this.id,
+      workId: workId ?? this.workId,
+      number: number ?? this.number,
+      status: status ?? this.status,
+      rating: rating ?? this.rating,
+      startedAt: startedAt ?? this.startedAt,
+      finishedAt: finishedAt ?? this.finishedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (workId.present) {
+      map['work_id'] = Variable<int>(workId.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (rating.present) {
+      map['rating'] = Variable<double>(rating.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (finishedAt.present) {
+      map['finished_at'] = Variable<DateTime>(finishedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingsCompanion(')
+          ..write('id: $id, ')
+          ..write('workId: $workId, ')
+          ..write('number: $number, ')
+          ..write('status: $status, ')
+          ..write('rating: $rating, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ReadingSessionsTable extends ReadingSessions
     with TableInfo<$ReadingSessionsTable, ReadingSession> {
   @override
@@ -801,6 +1318,20 @@ class $ReadingSessionsTable extends ReadingSessions
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES works (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _readingIdMeta = const VerificationMeta(
+    'readingId',
+  );
+  @override
+  late final GeneratedColumn<int> readingId = GeneratedColumn<int>(
+    'reading_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES readings (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
@@ -833,7 +1364,14 @@ class $ReadingSessionsTable extends ReadingSessions
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, workId, date, pagesRead, note];
+  List<GeneratedColumn> get $columns => [
+    id,
+    workId,
+    readingId,
+    date,
+    pagesRead,
+    note,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -856,6 +1394,12 @@ class $ReadingSessionsTable extends ReadingSessions
       );
     } else if (isInserting) {
       context.missing(_workIdMeta);
+    }
+    if (data.containsKey('reading_id')) {
+      context.handle(
+        _readingIdMeta,
+        readingId.isAcceptableOrUnknown(data['reading_id']!, _readingIdMeta),
+      );
     }
     if (data.containsKey('date')) {
       context.handle(
@@ -896,6 +1440,10 @@ class $ReadingSessionsTable extends ReadingSessions
         DriftSqlType.int,
         data['${effectivePrefix}work_id'],
       )!,
+      readingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reading_id'],
+      ),
       date: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
@@ -920,12 +1468,17 @@ class $ReadingSessionsTable extends ReadingSessions
 class ReadingSession extends DataClass implements Insertable<ReadingSession> {
   final int id;
   final int workId;
+
+  /// Leitura à qual a sessão pertence. Pode ser nulo apenas em dados antigos
+  /// importados antes do suporte a releituras.
+  final int? readingId;
   final DateTime date;
   final int pagesRead;
   final String? note;
   const ReadingSession({
     required this.id,
     required this.workId,
+    this.readingId,
     required this.date,
     required this.pagesRead,
     this.note,
@@ -935,6 +1488,9 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['work_id'] = Variable<int>(workId);
+    if (!nullToAbsent || readingId != null) {
+      map['reading_id'] = Variable<int>(readingId);
+    }
     map['date'] = Variable<DateTime>(date);
     map['pages_read'] = Variable<int>(pagesRead);
     if (!nullToAbsent || note != null) {
@@ -947,6 +1503,9 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     return ReadingSessionsCompanion(
       id: Value(id),
       workId: Value(workId),
+      readingId: readingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readingId),
       date: Value(date),
       pagesRead: Value(pagesRead),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
@@ -961,6 +1520,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     return ReadingSession(
       id: serializer.fromJson<int>(json['id']),
       workId: serializer.fromJson<int>(json['workId']),
+      readingId: serializer.fromJson<int?>(json['readingId']),
       date: serializer.fromJson<DateTime>(json['date']),
       pagesRead: serializer.fromJson<int>(json['pagesRead']),
       note: serializer.fromJson<String?>(json['note']),
@@ -972,6 +1532,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'workId': serializer.toJson<int>(workId),
+      'readingId': serializer.toJson<int?>(readingId),
       'date': serializer.toJson<DateTime>(date),
       'pagesRead': serializer.toJson<int>(pagesRead),
       'note': serializer.toJson<String?>(note),
@@ -981,12 +1542,14 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
   ReadingSession copyWith({
     int? id,
     int? workId,
+    Value<int?> readingId = const Value.absent(),
     DateTime? date,
     int? pagesRead,
     Value<String?> note = const Value.absent(),
   }) => ReadingSession(
     id: id ?? this.id,
     workId: workId ?? this.workId,
+    readingId: readingId.present ? readingId.value : this.readingId,
     date: date ?? this.date,
     pagesRead: pagesRead ?? this.pagesRead,
     note: note.present ? note.value : this.note,
@@ -995,6 +1558,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     return ReadingSession(
       id: data.id.present ? data.id.value : this.id,
       workId: data.workId.present ? data.workId.value : this.workId,
+      readingId: data.readingId.present ? data.readingId.value : this.readingId,
       date: data.date.present ? data.date.value : this.date,
       pagesRead: data.pagesRead.present ? data.pagesRead.value : this.pagesRead,
       note: data.note.present ? data.note.value : this.note,
@@ -1006,6 +1570,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     return (StringBuffer('ReadingSession(')
           ..write('id: $id, ')
           ..write('workId: $workId, ')
+          ..write('readingId: $readingId, ')
           ..write('date: $date, ')
           ..write('pagesRead: $pagesRead, ')
           ..write('note: $note')
@@ -1014,13 +1579,14 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
   }
 
   @override
-  int get hashCode => Object.hash(id, workId, date, pagesRead, note);
+  int get hashCode => Object.hash(id, workId, readingId, date, pagesRead, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ReadingSession &&
           other.id == this.id &&
           other.workId == this.workId &&
+          other.readingId == this.readingId &&
           other.date == this.date &&
           other.pagesRead == this.pagesRead &&
           other.note == this.note);
@@ -1029,12 +1595,14 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
 class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
   final Value<int> id;
   final Value<int> workId;
+  final Value<int?> readingId;
   final Value<DateTime> date;
   final Value<int> pagesRead;
   final Value<String?> note;
   const ReadingSessionsCompanion({
     this.id = const Value.absent(),
     this.workId = const Value.absent(),
+    this.readingId = const Value.absent(),
     this.date = const Value.absent(),
     this.pagesRead = const Value.absent(),
     this.note = const Value.absent(),
@@ -1042,6 +1610,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
   ReadingSessionsCompanion.insert({
     this.id = const Value.absent(),
     required int workId,
+    this.readingId = const Value.absent(),
     required DateTime date,
     required int pagesRead,
     this.note = const Value.absent(),
@@ -1051,6 +1620,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
   static Insertable<ReadingSession> custom({
     Expression<int>? id,
     Expression<int>? workId,
+    Expression<int>? readingId,
     Expression<DateTime>? date,
     Expression<int>? pagesRead,
     Expression<String>? note,
@@ -1058,6 +1628,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (workId != null) 'work_id': workId,
+      if (readingId != null) 'reading_id': readingId,
       if (date != null) 'date': date,
       if (pagesRead != null) 'pages_read': pagesRead,
       if (note != null) 'note': note,
@@ -1067,6 +1638,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
   ReadingSessionsCompanion copyWith({
     Value<int>? id,
     Value<int>? workId,
+    Value<int?>? readingId,
     Value<DateTime>? date,
     Value<int>? pagesRead,
     Value<String?>? note,
@@ -1074,6 +1646,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     return ReadingSessionsCompanion(
       id: id ?? this.id,
       workId: workId ?? this.workId,
+      readingId: readingId ?? this.readingId,
       date: date ?? this.date,
       pagesRead: pagesRead ?? this.pagesRead,
       note: note ?? this.note,
@@ -1088,6 +1661,9 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     }
     if (workId.present) {
       map['work_id'] = Variable<int>(workId.value);
+    }
+    if (readingId.present) {
+      map['reading_id'] = Variable<int>(readingId.value);
     }
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
@@ -1106,6 +1682,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     return (StringBuffer('ReadingSessionsCompanion(')
           ..write('id: $id, ')
           ..write('workId: $workId, ')
+          ..write('readingId: $readingId, ')
           ..write('date: $date, ')
           ..write('pagesRead: $pagesRead, ')
           ..write('note: $note')
@@ -2554,6 +3131,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $WorksTable works = $WorksTable(this);
+  late final $ReadingsTable readings = $ReadingsTable(this);
   late final $ReadingSessionsTable readingSessions = $ReadingSessionsTable(
     this,
   );
@@ -2562,6 +3140,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AnalysesTable analyses = $AnalysesTable(this);
   late final $AnalysisWorksTable analysisWorks = $AnalysisWorksTable(this);
   late final WorksDao worksDao = WorksDao(this as AppDatabase);
+  late final ReadingsDao readingsDao = ReadingsDao(this as AppDatabase);
   late final ReadingSessionsDao readingSessionsDao = ReadingSessionsDao(
     this as AppDatabase,
   );
@@ -2577,6 +3156,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     works,
+    readings,
     readingSessions,
     notes,
     quotes,
@@ -2588,6 +3168,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'works',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('readings', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'works',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reading_sessions', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'readings',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('reading_sessions', kind: UpdateKind.delete)],
@@ -2657,6 +3251,25 @@ typedef $$WorksTableUpdateCompanionBuilder =
 final class $$WorksTableReferences
     extends BaseReferences<_$AppDatabase, $WorksTable, Work> {
   $$WorksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ReadingsTable, List<Reading>> _readingsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.readings,
+    aliasName: 'works__id__readings__work_id',
+  );
+
+  $$ReadingsTableProcessedTableManager get readingsRefs {
+    final manager = $$ReadingsTableTableManager(
+      $_db,
+      $_db.readings,
+    ).filter((f) => f.workId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_readingsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 
   static MultiTypedResultKey<$ReadingSessionsTable, List<ReadingSession>>
   _readingSessionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -2783,6 +3396,31 @@ class $$WorksTableFilterComposer extends Composer<_$AppDatabase, $WorksTable> {
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> readingsRefs(
+    Expression<bool> Function($$ReadingsTableFilterComposer f) f,
+  ) {
+    final $$ReadingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readings,
+      getReferencedColumn: (t) => t.workId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingsTableFilterComposer(
+            $db: $db,
+            $table: $db.readings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 
   Expression<bool> readingSessionsRefs(
     Expression<bool> Function($$ReadingSessionsTableFilterComposer f) f,
@@ -2977,6 +3615,31 @@ class $$WorksTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  Expression<T> readingsRefs<T extends Object>(
+    Expression<T> Function($$ReadingsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readings,
+      getReferencedColumn: (t) => t.workId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> readingSessionsRefs<T extends Object>(
     Expression<T> Function($$ReadingSessionsTableAnnotationComposer a) f,
   ) {
@@ -3067,6 +3730,7 @@ class $$WorksTableTableManager
           (Work, $$WorksTableReferences),
           Work,
           PrefetchHooks Function({
+            bool readingsRefs,
             bool readingSessionsRefs,
             bool notesRefs,
             bool analysisWorksRefs,
@@ -3149,6 +3813,7 @@ class $$WorksTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                readingsRefs = false,
                 readingSessionsRefs = false,
                 notesRefs = false,
                 analysisWorksRefs = false,
@@ -3156,6 +3821,7 @@ class $$WorksTableTableManager
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (readingsRefs) db.readings,
                     if (readingSessionsRefs) db.readingSessions,
                     if (notesRefs) db.notes,
                     if (analysisWorksRefs) db.analysisWorks,
@@ -3163,6 +3829,26 @@ class $$WorksTableTableManager
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (readingsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Work,
+                          $WorksTable,
+                          Reading,
+                          $ReadingsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorksTableReferences
+                              ._readingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'work_id',
+                          typedResults: items,
+                        ),
                       if (readingSessionsRefs)
                         await $_getPrefetchedDataByColumns<
                           Work,
@@ -3240,15 +3926,481 @@ typedef $$WorksTableProcessedTableManager =
       (Work, $$WorksTableReferences),
       Work,
       PrefetchHooks Function({
+        bool readingsRefs,
         bool readingSessionsRefs,
         bool notesRefs,
         bool analysisWorksRefs,
       })
     >;
+typedef $$ReadingsTableCreateCompanionBuilder =
+    ReadingsCompanion Function({
+      Value<int> id,
+      required int workId,
+      required int number,
+      Value<String> status,
+      Value<double?> rating,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> finishedAt,
+      Value<DateTime> createdAt,
+    });
+typedef $$ReadingsTableUpdateCompanionBuilder =
+    ReadingsCompanion Function({
+      Value<int> id,
+      Value<int> workId,
+      Value<int> number,
+      Value<String> status,
+      Value<double?> rating,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> finishedAt,
+      Value<DateTime> createdAt,
+    });
+
+final class $$ReadingsTableReferences
+    extends BaseReferences<_$AppDatabase, $ReadingsTable, Reading> {
+  $$ReadingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $WorksTable _workIdTable(_$AppDatabase db) =>
+      db.works.createAlias('readings__work_id__works__id');
+
+  $$WorksTableProcessedTableManager get workId {
+    final $_column = $_itemColumn<int>('work_id')!;
+
+    final manager = $$WorksTableTableManager(
+      $_db,
+      $_db.works,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ReadingSessionsTable, List<ReadingSession>>
+  _readingSessionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.readingSessions,
+    aliasName: 'readings__id__reading_sessions__reading_id',
+  );
+
+  $$ReadingSessionsTableProcessedTableManager get readingSessionsRefs {
+    final manager = $$ReadingSessionsTableTableManager(
+      $_db,
+      $_db.readingSessions,
+    ).filter((f) => f.readingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _readingSessionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ReadingsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingsTable> {
+  $$ReadingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$WorksTableFilterComposer get workId {
+    final $$WorksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workId,
+      referencedTable: $db.works,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorksTableFilterComposer(
+            $db: $db,
+            $table: $db.works,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> readingSessionsRefs(
+    Expression<bool> Function($$ReadingSessionsTableFilterComposer f) f,
+  ) {
+    final $$ReadingSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.readingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.readingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReadingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingsTable> {
+  $$ReadingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$WorksTableOrderingComposer get workId {
+    final $$WorksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workId,
+      referencedTable: $db.works,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorksTableOrderingComposer(
+            $db: $db,
+            $table: $db.works,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingsTable> {
+  $$ReadingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WorksTableAnnotationComposer get workId {
+    final $$WorksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workId,
+      referencedTable: $db.works,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.works,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> readingSessionsRefs<T extends Object>(
+    Expression<T> Function($$ReadingSessionsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.readingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReadingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingsTable,
+          Reading,
+          $$ReadingsTableFilterComposer,
+          $$ReadingsTableOrderingComposer,
+          $$ReadingsTableAnnotationComposer,
+          $$ReadingsTableCreateCompanionBuilder,
+          $$ReadingsTableUpdateCompanionBuilder,
+          (Reading, $$ReadingsTableReferences),
+          Reading,
+          PrefetchHooks Function({bool workId, bool readingSessionsRefs})
+        > {
+  $$ReadingsTableTableManager(_$AppDatabase db, $ReadingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> workId = const Value.absent(),
+                Value<int> number = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> rating = const Value.absent(),
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> finishedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReadingsCompanion(
+                id: id,
+                workId: workId,
+                number: number,
+                status: status,
+                rating: rating,
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int workId,
+                required int number,
+                Value<String> status = const Value.absent(),
+                Value<double?> rating = const Value.absent(),
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> finishedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReadingsCompanion.insert(
+                id: id,
+                workId: workId,
+                number: number,
+                status: status,
+                rating: rating,
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingsTable, Reading>(table),
+                  $$ReadingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({workId = false, readingSessionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (readingSessionsRefs) db.readingSessions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (workId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.workId,
+                                    referencedTable: $$ReadingsTableReferences
+                                        ._workIdTable(db),
+                                    referencedColumn: $$ReadingsTableReferences
+                                        ._workIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (readingSessionsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Reading,
+                          $ReadingsTable,
+                          ReadingSession,
+                          $ReadingSessionsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReadingsTableReferences
+                              ._readingSessionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReadingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingSessionsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'reading_id',
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ReadingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingsTable,
+      Reading,
+      $$ReadingsTableFilterComposer,
+      $$ReadingsTableOrderingComposer,
+      $$ReadingsTableAnnotationComposer,
+      $$ReadingsTableCreateCompanionBuilder,
+      $$ReadingsTableUpdateCompanionBuilder,
+      (Reading, $$ReadingsTableReferences),
+      Reading,
+      PrefetchHooks Function({bool workId, bool readingSessionsRefs})
+    >;
 typedef $$ReadingSessionsTableCreateCompanionBuilder =
     ReadingSessionsCompanion Function({
       Value<int> id,
       required int workId,
+      Value<int?> readingId,
       required DateTime date,
       required int pagesRead,
       Value<String?> note,
@@ -3257,6 +4409,7 @@ typedef $$ReadingSessionsTableUpdateCompanionBuilder =
     ReadingSessionsCompanion Function({
       Value<int> id,
       Value<int> workId,
+      Value<int?> readingId,
       Value<DateTime> date,
       Value<int> pagesRead,
       Value<String?> note,
@@ -3282,6 +4435,23 @@ final class $$ReadingSessionsTableReferences
       $_db.works,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_workIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ReadingsTable _readingIdTable(_$AppDatabase db) =>
+      db.readings.createAlias('reading_sessions__reading_id__readings__id');
+
+  $$ReadingsTableProcessedTableManager? get readingId {
+    final $_column = $_itemColumn<int>('reading_id');
+    if ($_column == null) return null;
+    final manager = $$ReadingsTableTableManager(
+      $_db,
+      $_db.readings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_readingIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -3332,6 +4502,29 @@ class $$ReadingSessionsTableFilterComposer
           }) => $$WorksTableFilterComposer(
             $db: $db,
             $table: $db.works,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ReadingsTableFilterComposer get readingId {
+    final $$ReadingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readingId,
+      referencedTable: $db.readings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingsTableFilterComposer(
+            $db: $db,
+            $table: $db.readings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3393,6 +4586,29 @@ class $$ReadingSessionsTableOrderingComposer
     );
     return composer;
   }
+
+  $$ReadingsTableOrderingComposer get readingId {
+    final $$ReadingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readingId,
+      referencedTable: $db.readings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.readings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ReadingSessionsTableAnnotationComposer
@@ -3438,6 +4654,29 @@ class $$ReadingSessionsTableAnnotationComposer
     );
     return composer;
   }
+
+  $$ReadingsTableAnnotationComposer get readingId {
+    final $$ReadingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readingId,
+      referencedTable: $db.readings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ReadingSessionsTableTableManager
@@ -3453,7 +4692,7 @@ class $$ReadingSessionsTableTableManager
           $$ReadingSessionsTableUpdateCompanionBuilder,
           (ReadingSession, $$ReadingSessionsTableReferences),
           ReadingSession,
-          PrefetchHooks Function({bool workId})
+          PrefetchHooks Function({bool workId, bool readingId})
         > {
   $$ReadingSessionsTableTableManager(
     _$AppDatabase db,
@@ -3472,12 +4711,14 @@ class $$ReadingSessionsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> workId = const Value.absent(),
+                Value<int?> readingId = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> pagesRead = const Value.absent(),
                 Value<String?> note = const Value.absent(),
               }) => ReadingSessionsCompanion(
                 id: id,
                 workId: workId,
+                readingId: readingId,
                 date: date,
                 pagesRead: pagesRead,
                 note: note,
@@ -3486,12 +4727,14 @@ class $$ReadingSessionsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int workId,
+                Value<int?> readingId = const Value.absent(),
                 required DateTime date,
                 required int pagesRead,
                 Value<String?> note = const Value.absent(),
               }) => ReadingSessionsCompanion.insert(
                 id: id,
                 workId: workId,
+                readingId: readingId,
                 date: date,
                 pagesRead: pagesRead,
                 note: note,
@@ -3504,7 +4747,7 @@ class $$ReadingSessionsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({workId = false}) {
+          prefetchHooksCallback: ({workId = false, readingId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -3539,6 +4782,21 @@ class $$ReadingSessionsTableTableManager
                               )
                               as T;
                     }
+                    if (readingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.readingId,
+                                referencedTable:
+                                    $$ReadingSessionsTableReferences
+                                        ._readingIdTable(db),
+                                referencedColumn:
+                                    $$ReadingSessionsTableReferences
+                                        ._readingIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
                     return state;
                   },
@@ -3563,7 +4821,7 @@ typedef $$ReadingSessionsTableProcessedTableManager =
       $$ReadingSessionsTableUpdateCompanionBuilder,
       (ReadingSession, $$ReadingSessionsTableReferences),
       ReadingSession,
-      PrefetchHooks Function({bool workId})
+      PrefetchHooks Function({bool workId, bool readingId})
     >;
 typedef $$NotesTableCreateCompanionBuilder =
     NotesCompanion Function({
@@ -5002,6 +6260,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$WorksTableTableManager get works =>
       $$WorksTableTableManager(_db, _db.works);
+  $$ReadingsTableTableManager get readings =>
+      $$ReadingsTableTableManager(_db, _db.readings);
   $$ReadingSessionsTableTableManager get readingSessions =>
       $$ReadingSessionsTableTableManager(_db, _db.readingSessions);
   $$NotesTableTableManager get notes =>

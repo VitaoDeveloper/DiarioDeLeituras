@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_drawer_button.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
+import '../works/readings_providers.dart';
 import '../works/works_providers.dart';
 import 'stats_providers.dart';
 
@@ -328,9 +329,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     final worksAsync = ref.watch(worksProvider);
+    final readingsAsync = ref.watch(readingsProvider);
     final sessionsAsync = ref.watch(readingSessionsProvider);
 
-    if (worksAsync.isLoading || sessionsAsync.isLoading) {
+    if (worksAsync.isLoading ||
+        readingsAsync.isLoading ||
+        sessionsAsync.isLoading) {
       return Scaffold(
         appBar: AppBar(
           title: const Text(AppStrings.stats),
@@ -339,7 +343,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    if (worksAsync.hasError || sessionsAsync.hasError) {
+    if (worksAsync.hasError ||
+        readingsAsync.hasError ||
+        sessionsAsync.hasError) {
       return Scaffold(
         appBar: AppBar(
           title: const Text(AppStrings.stats),
@@ -372,7 +378,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             _chartCard(
               AppStrings.statusChart,
               summary.statusCounts,
-              summary.hasWorks ? null : AppStrings.emptyWorksChart,
+              summary.hasReadings
+                  ? null
+                  : summary.hasWorks
+                      ? AppStrings.emptyReadingsChart
+                      : AppStrings.emptyWorksChart,
             ),
             const SizedBox(height: 16),
             _chartCard(
@@ -400,7 +410,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             _chartCard(
               AppStrings.completedChart,
               summary.completedSeries,
-              !summary.hasFinishedWorks
+              !summary.hasFinishedReadings
                   ? AppStrings.emptyFinishedChart
                   : summary.hasCompletedInPeriod
                       ? null

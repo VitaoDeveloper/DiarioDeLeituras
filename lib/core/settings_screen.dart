@@ -46,6 +46,7 @@ class SettingsScreen extends ConsumerWidget {
               Text(
                 AppStrings.importSummary(
                   data.workCount,
+                  data.readingCount,
                   data.noteCount,
                   data.analysisCount,
                 ),

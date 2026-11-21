@@ -15,19 +15,22 @@ nuvem, sincronização ou consultas a APIs externas.
 
 ## Funcionalidades
 
-- **Obras:** cadastro com tipo, título, autor, gênero, ano, páginas, status,
-  nota e datas de início/fim; filtros por status, tipo e gênero; busca por
-  título ou autor; detalhe com progresso, sessões de leitura, fichamentos e
-  análises vinculadas.
-- **Sessões de leitura:** registro de páginas lidas por data, com aviso (sem
-  bloqueio) quando a soma ultrapassa o total de páginas da obra.
+- **Obras:** cadastro com tipo, título, autor, gênero, ano e páginas; filtros
+  por status (da leitura mais recente), tipo e gênero; busca por título ou
+  autor; detalhe com leituras, fichamentos e análises vinculadas.
+- **Leituras e releituras:** cada obra pode ter vários ciclos numerados, cada
+  um com status, nota, datas de início/fim, progresso e sessões próprias.
+- **Sessões de leitura:** registro de páginas lidas por data dentro de uma
+  leitura, com aviso (sem bloqueio) quando a soma ultrapassa o total de
+  páginas da obra.
 - **Fichamentos:** vários por obra, com rótulo, resumo, tese, conceitos,
   crítica e uma lista de citações com página e comentário.
 - **Análises:** texto livre com título, vínculo opcional com várias obras e
   salvamento automático ao sair da tela.
 - **Estatísticas:** sequência atual (com estado "em risco") e maior sequência,
-  calendário mensal de dias lidos, contagens por status/tipo/gênero, páginas
-  lidas e obras concluídas por mês/ano, e nota média por gênero e autor.
+  calendário mensal de dias lidos, contagens de leituras por status e de obras
+  por tipo/gênero, páginas lidas e leituras concluídas por mês/ano, e nota
+  média por gênero e autor considerando todas as leituras.
 - **Backup:** exportação e importação de todos os dados em JSON, com validação
   de versão e estrutura, resumo antes de importar e substituição atômica.
 - **Navegação:** menu lateral (`NavigationDrawer`) com as quatro seções e
@@ -90,7 +93,9 @@ Em **Configurações → Exportar dados**, um arquivo `.json` com todas as tabel
 é compartilhado pelo Android. Em **Importar dados**, escolha um `.json` válido:
 o app mostra a quantidade de obras, fichamentos e análises e pede confirmação.
 A importação substitui os dados atuais dentro de uma única transação; em caso
-de erro, nada é alterado.
+de erro, nada é alterado. Backups da versão 1 (sem releituras) também são
+aceitos: cada obra é convertida na sua leitura 1 e as sessões antigas são
+vinculadas a ela.
 
 ## Testes e qualidade
 
@@ -100,8 +105,9 @@ flutter test
 ```
 
 A suíte cobre cálculo da sequência diária (inclusive viradas de mês/ano e
-sessões editadas ou apagadas), queries de estatísticas, ida e volta do backup e
-navegação/menu lateral.
+sessões editadas ou apagadas), criação de releituras e migração do schema 1,
+estatísticas com várias leituras por obra, ida e volta do backup (incluindo
+backups legados) e navegação/menu lateral.
 
 ## Identidade visual
 

@@ -10,12 +10,14 @@ import 'works_providers.dart';
 class ReadingSessionFormDialog extends ConsumerStatefulWidget {
   const ReadingSessionFormDialog({
     required this.work,
+    required this.reading,
     required this.currentTotal,
     this.session,
     super.key,
   });
 
   final Work work;
+  final Reading reading;
   final int currentTotal;
   final ReadingSession? session;
 
@@ -80,6 +82,7 @@ class _ReadingSessionFormDialogState
         await dao.insertSession(
           ReadingSessionsCompanion(
             workId: Value(widget.work.id),
+            readingId: Value(widget.reading.id),
             date: Value(_date),
             pagesRead: Value(pages),
             note: Value(note),

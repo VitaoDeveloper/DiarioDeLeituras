@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
+import '../works/readings_providers.dart';
 import '../works/works_providers.dart';
 
 enum StatsPeriod { month, year }
@@ -41,9 +42,10 @@ class StatsSummary {
     required this.ratingByGenre,
     required this.ratingByAuthor,
     required this.hasWorks,
+    required this.hasReadings,
     required this.hasSessions,
     required this.hasPagesInPeriod,
-    required this.hasFinishedWorks,
+    required this.hasFinishedReadings,
     required this.hasCompletedInPeriod,
     required this.hasRatings,
   });
@@ -56,9 +58,10 @@ class StatsSummary {
   final List<StatsDatum> ratingByGenre;
   final List<StatsDatum> ratingByAuthor;
   final bool hasWorks;
+  final bool hasReadings;
   final bool hasSessions;
   final bool hasPagesInPeriod;
-  final bool hasFinishedWorks;
+  final bool hasFinishedReadings;
   final bool hasCompletedInPeriod;
   final bool hasRatings;
 }
@@ -150,7 +153,10 @@ List<StatsDatum> _counts(Iterable<String> values, List<String> preferredOrder) {
   ];
 }
 
-List<StatsDatum> _ratings(Iterable<(String, double)> entries) {
+List<StatsDatum> _ratings(
+  Iterable<(String, double)> entries, {
+  required String Function(int) countLabel,
+}) {
   final grouped = <String, List<double>>{};
   for (final entry in entries) {
     final key = entry.$1.trim();
@@ -163,7 +169,7 @@ List<StatsDatum> _ratings(Iterable<(String, double)> entries) {
       StatsDatum(
         label: key,
         value: grouped[key]!.reduce((a, b) => a + b) / grouped[key]!.length,
-        detail: AppStrings.workCountLabel(grouped[key]!.length),
+        detail: countLabel(grouped[key]!.length),
       ),
   ];
 }
@@ -171,7 +177,7 @@ List<StatsDatum> _ratings(Iterable<(String, double)> entries) {
 ({List<StatsDatum> series, bool hasData}) _periodSeries({
   required StatsFilter filter,
   required List<ReadingSession> sessions,
-  required List<Work> works,
+  required List<Reading> readings,
   required bool pages,
 }) {
   final reference = filter.reference;
@@ -196,8 +202,8 @@ List<StatsDatum> _ratings(Iterable<(String, double)> entries) {
   }
 
   if (!pages) {
-    for (final work in works) {
-      final finishedAt = work.finishedAt;
+    for (final reading in readings) {
+      final finishedAt = reading.finishedAt;
       if (finishedAt == null) continue;
       if (filter.period == StatsPeriod.month) {
         if (finishedAt.year == reference.year &&
@@ -226,25 +232,33 @@ List<StatsDatum> _ratings(Iterable<(String, double)> entries) {
 
 StatsSummary buildStatsSummary(
   List<Work> works,
+  List<Reading> readings,
   List<ReadingSession> sessions,
   StatsFilter filter,
 ) {
   final pages = _periodSeries(
     filter: filter,
     sessions: sessions,
-    works: works,
+    readings: readings,
     pages: true,
   );
   final completed = _periodSeries(
     filter: filter,
     sessions: sessions,
-    works: works,
+    readings: readings,
     pages: false,
+  );
+
+  final worksById = <int, Work>{
+    for (final work in works) work.id: work,
+  };
+  final ratedReadings = readings.where(
+    (reading) => reading.rating != null && worksById.containsKey(reading.workId),
   );
 
   return StatsSummary(
     statusCounts: _counts(
-      works.map((work) => AppStrings.workStatusLabel(work.status)),
+      readings.map((reading) => AppStrings.workStatusLabel(reading.status)),
       WorkStatus.values.map(AppStrings.workStatusLabel).toList(),
     ),
     typeCounts: _counts(
@@ -255,21 +269,24 @@ StatsSummary buildStatsSummary(
     pagesSeries: pages.series,
     completedSeries: completed.series,
     ratingByGenre: _ratings(
-      works
-          .where((work) => work.rating != null)
-          .map((work) => (work.genre, work.rating!)),
+      ratedReadings.map(
+        (reading) => (worksById[reading.workId]!.genre, reading.rating!),
+      ),
+      countLabel: AppStrings.readingCountLabel,
     ),
     ratingByAuthor: _ratings(
-      works
-          .where((work) => work.rating != null)
-          .map((work) => (work.author, work.rating!)),
+      ratedReadings.map(
+        (reading) => (worksById[reading.workId]!.author, reading.rating!),
+      ),
+      countLabel: AppStrings.readingCountLabel,
     ),
     hasWorks: works.isNotEmpty,
+    hasReadings: readings.isNotEmpty,
     hasSessions: sessions.isNotEmpty,
     hasPagesInPeriod: pages.hasData,
-    hasFinishedWorks: works.any((work) => work.finishedAt != null),
+    hasFinishedReadings: readings.any((reading) => reading.finishedAt != null),
     hasCompletedInPeriod: completed.hasData,
-    hasRatings: works.any((work) => work.rating != null),
+    hasRatings: ratedReadings.isNotEmpty,
   );
 }
 
@@ -285,7 +302,8 @@ final streakProvider = Provider<StreakInfo>((ref) {
 
 final statsProvider = Provider.family<StatsSummary, StatsFilter>((ref, filter) {
   final works = ref.watch(worksProvider).value ?? const <Work>[];
+  final readings = ref.watch(readingsProvider).value ?? const <Reading>[];
   final sessions =
       ref.watch(readingSessionsProvider).value ?? const <ReadingSession>[];
-  return buildStatsSummary(works, sessions, filter);
+  return buildStatsSummary(works, readings, sessions, filter);
 });

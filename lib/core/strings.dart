@@ -31,8 +31,9 @@ abstract final class AppStrings {
   static String analysisCountLabel(int count) =>
       '$count ${count == 1 ? analysisSingular : analysisPlural}';
 
-  static String importSummary(int works, int notes, int analyses) =>
+  static String importSummary(int works, int readings, int notes, int analyses) =>
       '${workCountLabel(works)}\n'
+      '${readingCountLabel(readings)}\n'
       '${noteCountLabel(notes)}\n'
       '${analysisCountLabel(analyses)}';
 
@@ -44,11 +45,11 @@ abstract final class AppStrings {
   static const String readTodayHint = 'Leia hoje para manter a sequência';
   static const String noStreak = 'Nenhuma leitura registrada ainda.';
   static const String calendar = 'Calendário de leitura';
-  static const String statusChart = 'Obras por status';
+  static const String statusChart = 'Leituras por status';
   static const String typeChart = 'Obras por tipo';
   static const String genreChart = 'Obras por gênero';
   static const String pagesChart = 'Páginas lidas';
-  static const String completedChart = 'Obras concluídas';
+  static const String completedChart = 'Leituras concluídas';
   static const String ratingByGenre = 'Nota média por gênero';
   static const String ratingByAuthor = 'Nota média por autor';
   static const String periodMonth = 'Mês';
@@ -67,11 +68,13 @@ abstract final class AppStrings {
     'dom',
   ];
   static const String emptyWorksChart = 'Cadastre obras para ver este gráfico.';
+  static const String emptyReadingsChart =
+      'Cadastre uma leitura para ver este gráfico.';
   static const String emptySessionsChart =
       'Registre sessões de leitura para ver este gráfico.';
   static const String emptyFinishedChart =
-      'Marque obras como lidas para ver este gráfico.';
-  static const String emptyRatingsChart = 'Avalie obras para ver este gráfico.';
+      'Marque uma leitura como lida para ver este gráfico.';
+  static const String emptyRatingsChart = 'Avalie leituras para ver este gráfico.';
   static const String emptyPeriod = 'Nenhum dado neste período.';
 
   static String streakLabel(int count) =>
@@ -130,6 +133,29 @@ abstract final class AppStrings {
   static const String noWorksFilter = 'Nenhuma obra com esses filtros.';
   static const String noRatingValue = '—';
   static const String genreSuggestions = 'Gêneros já usados';
+
+  static const String readingSingular = 'leitura';
+  static const String readingPlural = 'leituras';
+
+  static String readingCountLabel(int count) =>
+      '$count ${count == 1 ? readingSingular : readingPlural}';
+
+  static String readingLabel(int number) => '$numberª leitura';
+
+  static const String readings = 'Leituras';
+  static const String newReading = 'Nova leitura';
+  static const String editReading = 'Editar leitura';
+  static const String noReadings = 'Nenhuma leitura registrada.';
+  static const String readingSaved = 'Leitura salva.';
+  static const String readingAdded = 'Leitura registrada.';
+  static const String readingFieldsHint =
+      'Status, nota e datas são registrados em cada leitura nos detalhes da obra.';
+  static const String deleteReadingTitle = 'Excluir leitura?';
+  static const String deleteReadingBody =
+      'As sessões desta leitura também serão removidas. As demais leituras '
+      'da obra serão mantidas.';
+  static const String lastReadingError =
+      'Não é possível excluir a única leitura da obra.';
 
   static const String readingSessions = 'Sessões de leitura';
   static const String registerSession = 'Registrar sessão';
@@ -202,7 +228,8 @@ abstract final class AppStrings {
 
   static const String deleteWorkTitle = 'Excluir obra?';
   static const String deleteWorkBody =
-      'As sessões, fichamentos e vínculos desta obra também serão removidos.';
+      'As leituras, sessões, fichamentos e vínculos desta obra também serão '
+      'removidos.';
   static const String deleteSessionTitle = 'Excluir sessão?';
   static const String deleteSessionBody = 'Esta ação não pode ser desfeita.';
 

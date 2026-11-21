@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../../data/database.dart';
+import 'readings_providers.dart';
 import 'works_providers.dart';
 
 class WorksFormScreen extends ConsumerStatefulWidget {
@@ -27,10 +27,6 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
 
   Future<Work?>? _loadFuture;
   String _type = WorkType.livro;
-  String _status = WorkStatus.queroLer;
-  double? _rating;
-  DateTime? _startedAt;
-  DateTime? _finishedAt;
   bool _saving = false;
 
   @override
@@ -53,10 +49,6 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
     _yearController.text = work.year?.toString() ?? '';
     _pagesController.text = work.pages?.toString() ?? '';
     _type = work.type;
-    _status = work.status;
-    _rating = work.rating;
-    _startedAt = work.startedAt;
-    _finishedAt = work.finishedAt;
   }
 
   @override
@@ -90,58 +82,31 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
     return null;
   }
 
-  Future<void> _pickDate({required bool isStart}) async {
-    final current = (isStart ? _startedAt : _finishedAt) ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(1900),
-      lastDate: DateTime(DateTime.now().year + 10),
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        if (isStart) {
-          _startedAt = picked;
-        } else {
-          _finishedAt = picked;
-        }
-      });
-    }
-  }
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
     try {
-      final now = DateTime.now();
-      final startedAt = _status == WorkStatus.lendo
-          ? (_startedAt ?? now)
-          : _startedAt;
-      final finishedAt = _status == WorkStatus.lido
-          ? (_finishedAt ?? now)
-          : _finishedAt;
-
       final yearText = _yearController.text.trim();
       final pagesText = _pagesController.text.trim();
       final year = yearText.isEmpty ? null : int.parse(yearText);
       final pages = pagesText.isEmpty ? null : int.parse(pagesText);
+      final now = DateTime.now();
 
       final dao = ref.read(worksDaoProvider);
       if (widget.workId == null) {
-        await dao.insertWork(
-          WorksCompanion(
+        await createWorkWithReading(
+          db: ref.read(appDatabaseProvider),
+          work: WorksCompanion(
             type: Value(_type),
             title: Value(_titleController.text.trim()),
             author: Value(_authorController.text.trim()),
             genre: Value(_genreController.text.trim()),
             year: Value(year),
             pages: Value(pages),
-            status: Value(_status),
-            rating: Value(_rating),
-            startedAt: Value(startedAt),
-            finishedAt: Value(finishedAt),
           ),
+          reading: const ReadingWrite(status: WorkStatus.queroLer),
+          now: now,
         );
       } else {
         final existing = await dao.findById(widget.workId!);
@@ -161,10 +126,6 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
             genre: _genreController.text.trim(),
             year: Value(year),
             pages: Value(pages),
-            status: _status,
-            rating: Value(_rating),
-            startedAt: Value(startedAt),
-            finishedAt: Value(finishedAt),
           ),
         );
       }
@@ -184,37 +145,6 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  Widget _dateRow({
-    required String label,
-    required DateTime? value,
-    required bool isStart,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            '$label: ${value == null ? AppStrings.noRatingValue : formatDate(value)}',
-          ),
-        ),
-        TextButton(
-          onPressed: () => _pickDate(isStart: isStart),
-          child: const Text(AppStrings.chooseDate),
-        ),
-        IconButton(
-          onPressed: () => setState(() {
-            if (isStart) {
-              _startedAt = null;
-            } else {
-              _finishedAt = null;
-            }
-          }),
-          icon: const Icon(Icons.clear),
-          tooltip: AppStrings.clearDate,
-        ),
-      ],
-    );
   }
 
   Widget _buildForm(List<String> genres) {
@@ -319,59 +249,10 @@ class _WorksFormScreenState extends ConsumerState<WorksFormScreen> {
               ],
               onChanged: (value) => setState(() => _type = value!),
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _status,
-              decoration: const InputDecoration(
-                labelText: AppStrings.status,
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                DropdownMenuItem(
-                  value: WorkStatus.queroLer,
-                  child: Text(AppStrings.statusQueroLer),
-                ),
-                DropdownMenuItem(
-                  value: WorkStatus.lendo,
-                  child: Text(AppStrings.statusLendo),
-                ),
-                DropdownMenuItem(
-                  value: WorkStatus.lido,
-                  child: Text(AppStrings.statusLido),
-                ),
-              ],
-              onChanged: (value) => setState(() => _status = value!),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<double?>(
-              initialValue: _rating,
-              decoration: const InputDecoration(
-                labelText: AppStrings.rating,
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                const DropdownMenuItem<double?>(
-                  value: null,
-                  child: Text(AppStrings.noRating),
-                ),
-                for (var step = 1; step <= 10; step++)
-                  DropdownMenuItem<double?>(
-                    value: step / 2,
-                    child: Text(formatRating(step / 2)),
-                  ),
-              ],
-              onChanged: (value) => setState(() => _rating = value),
-            ),
-            const SizedBox(height: 12),
-            _dateRow(
-              label: AppStrings.startedAt,
-              value: _startedAt,
-              isStart: true,
-            ),
-            _dateRow(
-              label: AppStrings.finishedAt,
-              value: _finishedAt,
-              isStart: false,
+            const SizedBox(height: 16),
+            Text(
+              AppStrings.readingFieldsHint,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             FilledButton(

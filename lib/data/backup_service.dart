@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,8 +10,10 @@ import 'package:share_plus/share_plus.dart';
 import '../core/strings.dart';
 import 'database.dart';
 
-const int backupVersion = 1;
+const int backupVersion = 2;
+const int _legacyBackupVersion = 1;
 const String _worksKey = 'works';
+const String _readingsKey = 'readings';
 const String _sessionsKey = 'reading_sessions';
 const String _notesKey = 'notes';
 const String _quotesKey = 'quotes';
@@ -29,6 +32,7 @@ class BackupException implements Exception {
 class BackupData {
   const BackupData({
     required this.works,
+    required this.readings,
     required this.sessions,
     required this.notes,
     required this.quotes,
@@ -37,6 +41,7 @@ class BackupData {
   });
 
   final List<Work> works;
+  final List<Reading> readings;
   final List<ReadingSession> sessions;
   final List<Note> notes;
   final List<Quote> quotes;
@@ -44,6 +49,7 @@ class BackupData {
   final List<AnalysisWork> links;
 
   int get workCount => works.length;
+  int get readingCount => readings.length;
   int get noteCount => notes.length;
   int get analysisCount => analyses.length;
 }
@@ -59,7 +65,9 @@ BackupData parseBackup(String content) {
     throw const BackupException(AppStrings.invalidBackup);
   }
   final root = decoded;
-  if (root['version'] != backupVersion) {
+  final version = root['version'];
+  if (version is! int ||
+      (version != _legacyBackupVersion && version != backupVersion)) {
     throw const BackupException(AppStrings.unsupportedVersion);
   }
 
@@ -86,13 +94,62 @@ BackupData parseBackup(String content) {
     return result;
   }
 
+  final works = parseList(_worksKey, Work.fromJson);
+  var sessions = parseList(_sessionsKey, ReadingSession.fromJson);
+  final notes = parseList(_notesKey, Note.fromJson);
+  final quotes = parseList(_quotesKey, Quote.fromJson);
+  final analyses = parseList(_analysesKey, Analysis.fromJson);
+  final links = parseList(_linksKey, AnalysisWork.fromJson);
+
+  late final List<Reading> readings;
+  if (version == _legacyBackupVersion) {
+    // Backups antigos guardavam o estado da leitura na própria obra. Cada obra
+    // vira a leitura 1 e as sessões são vinculadas a ela.
+    readings = [
+      for (final work in works)
+        Reading(
+          id: work.id,
+          workId: work.id,
+          number: 1,
+          status: work.status,
+          rating: work.rating,
+          startedAt: work.startedAt,
+          finishedAt: work.finishedAt,
+          createdAt: work.createdAt,
+        ),
+    ];
+    final readingByWork = {
+      for (final reading in readings) reading.workId: reading,
+    };
+    sessions = sessions
+        .map(
+          (session) => session.copyWith(
+            readingId: Value(readingByWork[session.workId]?.id),
+          ),
+        )
+        .toList();
+  } else {
+    readings = parseList(_readingsKey, Reading.fromJson);
+    final readingsByWork = <int, List<Reading>>{};
+    for (final reading in readings) {
+      readingsByWork.putIfAbsent(reading.workId, () => []).add(reading);
+    }
+    sessions = sessions.map((session) {
+      if (session.readingId != null) return session;
+      final candidates = readingsByWork[session.workId];
+      if (candidates == null || candidates.isEmpty) return session;
+      return session.copyWith(readingId: Value(candidates.first.id));
+    }).toList();
+  }
+
   return BackupData(
-    works: parseList(_worksKey, Work.fromJson),
-    sessions: parseList(_sessionsKey, ReadingSession.fromJson),
-    notes: parseList(_notesKey, Note.fromJson),
-    quotes: parseList(_quotesKey, Quote.fromJson),
-    analyses: parseList(_analysesKey, Analysis.fromJson),
-    links: parseList(_linksKey, AnalysisWork.fromJson),
+    works: works,
+    readings: readings,
+    sessions: sessions,
+    notes: notes,
+    quotes: quotes,
+    analyses: analyses,
+    links: links,
   );
 }
 
@@ -103,6 +160,7 @@ class BackupService {
 
   Future<Map<String, dynamic>> _readAll() async {
     final works = await _db.select(_db.works).get();
+    final readings = await _db.select(_db.readings).get();
     final sessions = await _db.select(_db.readingSessions).get();
     final notes = await _db.select(_db.notes).get();
     final quotes = await _db.select(_db.quotes).get();
@@ -112,6 +170,7 @@ class BackupService {
     return {
       'version': backupVersion,
       _worksKey: works.map((item) => item.toJson()).toList(),
+      _readingsKey: readings.map((item) => item.toJson()).toList(),
       _sessionsKey: sessions.map((item) => item.toJson()).toList(),
       _notesKey: notes.map((item) => item.toJson()).toList(),
       _quotesKey: quotes.map((item) => item.toJson()).toList(),
@@ -171,11 +230,15 @@ class BackupService {
         await _db.delete(_db.analysisWorks).go();
         await _db.delete(_db.notes).go();
         await _db.delete(_db.readingSessions).go();
+        await _db.delete(_db.readings).go();
         await _db.delete(_db.analyses).go();
         await _db.delete(_db.works).go();
 
         for (final work in data.works) {
           await _db.into(_db.works).insert(work);
+        }
+        for (final reading in data.readings) {
+          await _db.into(_db.readings).insert(reading);
         }
         for (final analysis in data.analyses) {
           await _db.into(_db.analyses).insert(analysis);
