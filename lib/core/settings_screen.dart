@@ -1,32 +1,33 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/backup_service.dart';
 import 'app_drawer_button.dart';
 import 'confirm_dialog.dart';
-import 'router.dart';
 import 'strings.dart';
 
 /// Tela de Configurações (exportar e importar dados), acessada pelo menu lateral.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  void _showMessage(String message) {
-    final context = rootScaffoldKey.currentContext;
-    if (context == null) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
-  Future<void> _export(WidgetRef ref) async {
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(backupServiceProvider).exportBackup();
-      _showMessage(AppStrings.exportSuccess);
+      _showMessage(context, AppStrings.exportSuccess);
     } on BackupException catch (error) {
-      _showMessage(error.message);
-    } catch (_) {
-      _showMessage(AppStrings.exportError);
+      _showMessage(context, error.message);
+    } catch (error) {
+      debugPrint('Falha ao exportar backup: $error');
+      _showMessage(context, AppStrings.exportError);
     }
   }
 
@@ -57,11 +58,14 @@ class SettingsScreen extends ConsumerWidget {
       );
       if (confirmed != true || !context.mounted) return;
       await ref.read(backupServiceProvider).importBackup(data);
-      _showMessage(AppStrings.importSuccess);
+      if (!context.mounted) return;
+      _showMessage(context, AppStrings.importSuccess);
+      context.go('/works');
     } on BackupException catch (error) {
-      _showMessage(error.message);
-    } catch (_) {
-      _showMessage(AppStrings.importError);
+      _showMessage(context, error.message);
+    } catch (error) {
+      debugPrint('Falha ao importar backup: $error');
+      _showMessage(context, AppStrings.importError);
     }
   }
 
@@ -77,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.ios_share),
             title: const Text(AppStrings.exportData),
-            onTap: () => _export(ref),
+            onTap: () => _export(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.file_open),
