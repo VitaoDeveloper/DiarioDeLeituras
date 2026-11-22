@@ -38,10 +38,11 @@ void main() {
     await initializeFormatting();
   });
 
+  late AppDatabase db;
   late _FakeBackupService service;
 
   Future<void> pumpSettings(WidgetTester tester) async {
-    final db = AppDatabase.connect(NativeDatabase.memory());
+    db = AppDatabase.connect(NativeDatabase.memory());
     service = _FakeBackupService(
       db,
       const BackupData(
@@ -76,13 +77,13 @@ void main() {
     );
     appRouter.go('/settings');
     await pumpFrames(tester, 20);
+  }
 
+  Future<void> closeApp(WidgetTester tester) async {
     // Desmonta o escopo antes de fechar o banco para cancelar os streams.
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await pumpFrames(tester, 5);
-      await db.close();
-    });
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpFrames(tester, 10);
+    await db.close();
   }
 
   testWidgets('confirmar importação executa a importação e mantém a tela',
@@ -106,6 +107,7 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text(AppStrings.exportData), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await closeApp(tester);
   });
 
   testWidgets('cancelar importação não altera os dados', (tester) async {
@@ -128,5 +130,6 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text(AppStrings.exportData), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await closeApp(tester);
   });
 }

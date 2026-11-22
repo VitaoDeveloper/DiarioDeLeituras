@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +16,32 @@ Future<void> pumpFrames(WidgetTester tester, [int count = 10]) async {
   }
 }
 
+class _FormHost extends StatelessWidget {
+  const _FormHost({
+    required this.work,
+    required this.reading,
+    required this.currentTotal,
+    this.session,
+  });
+
+  final Work work;
+  final Reading reading;
+  final int currentTotal;
+  final ReadingSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ReadingSessionFormDialog(
+        work: work,
+        reading: reading,
+        currentTotal: currentTotal,
+        session: session,
+      ),
+    );
+  }
+}
+
 void main() {
   setUpAll(() async {
     await initializeFormatting();
@@ -30,7 +54,6 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.connect(NativeDatabase.memory());
-    addTearDown(db.close);
     final now = DateTime(2026, 1, 1);
     workId = await createWorkWithReading(
       db: db,
@@ -48,7 +71,7 @@ void main() {
     reading = (await db.readingsDao.getByWork(workId)).single;
   });
 
-  Future<void> openDialog(
+  Future<void> openForm(
     WidgetTester tester, {
     required int currentTotal,
     ReadingSession? session,
@@ -56,68 +79,70 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [appDatabaseProvider.overrideWithValue(db)],
-        child: const MaterialApp(
-          home: SizedBox(key: Key('dialog-host')),
-        ),
-      ),
-    );
-    unawaited(
-      showDialog<bool>(
-        context: tester.element(find.byKey(const Key('dialog-host'))),
-        builder: (_) => ReadingSessionFormDialog(
-          work: work,
-          reading: reading,
-          currentTotal: currentTotal,
-          session: session,
+        child: MaterialApp(
+          home: Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (_) => _FormHost(
+                work: work,
+                reading: reading,
+                currentTotal: currentTotal,
+                session: session,
+              ),
+            ),
+          ),
         ),
       ),
     );
     await pumpFrames(tester);
   }
 
-  testWidgets('bloqueia sessão que ultrapassa o total de páginas',
-      (tester) async {
+  Future<void> closeApp(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpFrames(tester, 10);
+    await db.close();
+  }
+
+  Future<void> addExistingSession() async {
     await db.readingSessionsDao.insertSession(
       ReadingSessionsCompanion(
         workId: Value(workId),
         readingId: Value(reading.id),
-        date: const Value(DateTime(2026, 1, 1)),
+        date: Value(DateTime(2026, 1, 1)),
         pagesRead: const Value(80),
       ),
     );
-    await openDialog(tester, currentTotal: 80);
+  }
+
+  testWidgets('bloqueia sessão que ultrapassa o total de páginas',
+      (tester) async {
+    await addExistingSession();
+    await openForm(tester, currentTotal: 80);
 
     await tester.enterText(find.byType(TextFormField).first, '50');
     await tester.tap(find.text(AppStrings.save));
     await pumpFrames(tester);
 
     expect(find.text(AppStrings.pagesOverflowValidation), findsOneWidget);
-    final sessions = await db.readingSessionsDao.watchByReading(reading.id).first;
+    final sessions = await db.select(db.readingSessions).get();
     expect(sessions, hasLength(1));
     expect(sessions.single.pagesRead, 80);
+    await closeApp(tester);
   });
 
   testWidgets('permite editar sessão já computada no total da leitura',
       (tester) async {
-    await db.readingSessionsDao.insertSession(
-      ReadingSessionsCompanion(
-        workId: Value(workId),
-        readingId: Value(reading.id),
-        date: const Value(DateTime(2026, 1, 1)),
-        pagesRead: const Value(80),
-      ),
-    );
-    final session =
-        (await db.readingSessionsDao.watchByReading(reading.id).first).single;
+    await addExistingSession();
+    final session = (await db.select(db.readingSessions).get()).single;
     // A tela de detalhe desconta a sessão em edição do total da leitura.
-    await openDialog(tester, currentTotal: 0, session: session);
+    await openForm(tester, currentTotal: 0, session: session);
 
     await tester.enterText(find.byType(TextFormField).first, '90');
     await tester.tap(find.text(AppStrings.save));
     await pumpFrames(tester, 15);
 
-    final sessions = await db.readingSessionsDao.watchByReading(reading.id).first;
+    final sessions = await db.select(db.readingSessions).get();
     expect(sessions, hasLength(1));
     expect(sessions.single.pagesRead, 90);
+    await closeApp(tester);
   });
 }
