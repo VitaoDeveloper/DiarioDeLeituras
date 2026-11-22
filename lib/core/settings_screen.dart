@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,12 +21,13 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(backupServiceProvider).exportBackup();
+      if (!context.mounted) return;
       _showMessage(context, AppStrings.exportSuccess);
     } on BackupException catch (error) {
-      _showMessage(context, error.message);
+      if (context.mounted) _showMessage(context, error.message);
     } catch (error) {
       debugPrint('Falha ao exportar backup: $error');
-      _showMessage(context, AppStrings.exportError);
+      if (context.mounted) _showMessage(context, AppStrings.exportError);
     }
   }
 
