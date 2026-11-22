@@ -8,7 +8,6 @@ import 'package:reading_management/core/strings.dart';
 import 'package:reading_management/data/database.dart';
 import 'package:reading_management/features/works/reading_session_form.dart';
 import 'package:reading_management/features/works/readings_providers.dart';
-import 'package:reading_management/features/works/works_providers.dart';
 
 Future<void> pumpFrames(WidgetTester tester, [int count = 10]) async {
   for (var i = 0; i < count; i++) {
