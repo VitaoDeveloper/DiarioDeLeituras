@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/stats/stats_providers.dart';
 
-import 'app_logo.dart';
+import 'surpresa.dart';
 import 'settings_screen.dart';
 import '../features/analyses/analysis_form.dart';
 import '../features/analyses/analyses_screen.dart';
@@ -195,7 +195,7 @@ class _ScaffoldWithDrawer extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const AppLogo(size: 40),
+                      const LogoComSurpresa(size: 40),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
