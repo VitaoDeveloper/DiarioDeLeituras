@@ -34,7 +34,7 @@ class LogoComSurpresa extends ConsumerStatefulWidget {
 }
 
 class _LogoComSurpresaState extends ConsumerState<LogoComSurpresa> {
-  static const gestureWindow = Duration(seconds: 3);
+  static const gestureWindow = Duration(seconds: 6);
 
   int _taps = 0;
   DateTime? _lastTap;
@@ -57,10 +57,21 @@ class _LogoComSurpresaState extends ConsumerState<LogoComSurpresa> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: _handleTap,
+      // Caminho alternativo para quem tem dedos grandes ou toca devagar.
+      onLongPress: () {
+        _taps = 0;
+        _lastTap = null;
+        ref.read(surpresaProvider.notifier).reveal();
+      },
       // Sem tooltip, sem semantics e sem mudança visual: ninguém percebe
-      // que o logo é interativo até acertar a sequência.
-      child: AppLogo(size: widget.size),
+      // que o logo é interativo até acertar a sequência. O padding também
+      // amplia a área de toque além dos pixels visíveis do PNG.
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: AppLogo(size: widget.size),
+      ),
     );
   }
 }
