@@ -6,9 +6,10 @@ import '../../data/database.dart';
 import '../works/readings_providers.dart';
 import '../works/works_providers.dart';
 
-enum StatsPeriod { month, year }
+/// Granularidade das séries temporais dos gráficos.
+enum StatsGranularity { day, month }
 
-typedef StatsFilter = ({StatsPeriod period, DateTime reference});
+typedef StatsFilter = ({StatsGranularity granularity});
 
 class StreakInfo {
   const StreakInfo({
@@ -25,11 +26,27 @@ class StreakInfo {
 }
 
 class StatsDatum {
-  const StatsDatum({required this.label, required this.value, this.detail});
+  const StatsDatum({
+    required this.label,
+    required this.value,
+    this.detail,
+    this.groupLabel,
+    this.fullLabel,
+  });
 
+  /// Texto curto mostrado no eixo/tooltip (dia, mês ou categoria).
   final String label;
+
   final double value;
+
+  /// Informação extra, como a quantidade de leituras de uma nota média.
   final String? detail;
+
+  /// Rótulo de contexto no início de um bloco: "nov/2026" ou "2027".
+  final String? groupLabel;
+
+  /// Rótulo completo usado no tooltip ("21 de nov de 2026").
+  final String? fullLabel;
 }
 
 class StatsSummary {
@@ -174,59 +191,96 @@ List<StatsDatum> _ratings(
   ];
 }
 
-({List<StatsDatum> series, bool hasData}) _periodSeries({
-  required StatsFilter filter,
-  required List<ReadingSession> sessions,
-  required List<Reading> readings,
-  required bool pages,
-}) {
-  final reference = filter.reference;
-  final slots = filter.period == StatsPeriod.month
-      ? DateTime(reference.year, reference.month + 1, 0).day
-      : 12;
-  final buckets = List<double>.filled(slots, 0);
+DateTime _bucketStart(DateTime date, StatsGranularity granularity) =>
+    granularity == StatsGranularity.day
+    ? DateTime(date.year, date.month, date.day)
+    : DateTime(date.year, date.month);
 
-  void add(int index, double amount) {
-    if (index >= 0 && index < slots) buckets[index] += amount;
+DateTime _nextBucket(DateTime bucket, StatsGranularity granularity) =>
+    granularity == StatsGranularity.day
+    ? bucket.add(const Duration(days: 1))
+    : DateTime(bucket.year, bucket.month + 1);
+
+String? _groupLabel(DateTime bucket, StatsGranularity granularity) {
+  if (granularity == StatsGranularity.day) {
+    return bucket.day == 1 ? formatMonthYearShort(bucket) : null;
   }
+  return bucket.month == 1 ? '${bucket.year}' : null;
+}
 
+List<StatsDatum> _seriesFromBuckets(
+  Iterable<DateTime> events,
+  StatsGranularity granularity,
+  double Function(DateTime bucket) valueAt,
+) {
+  DateTime? first;
+  DateTime? last;
+  for (final event in events) {
+    final bucket = _bucketStart(event, granularity);
+    if (first == null || bucket.isBefore(first)) first = bucket;
+    if (last == null || bucket.isAfter(last)) last = bucket;
+  }
+  if (first == null || last == null) return const <StatsDatum>[];
+
+  final series = <StatsDatum>[];
+  var cursor = first;
+  while (!cursor.isAfter(last)) {
+    series.add(
+      StatsDatum(
+        label: granularity == StatsGranularity.day
+            ? '${cursor.day}'
+            : formatMonthShort(cursor.month),
+        value: valueAt(cursor),
+        groupLabel: _groupLabel(cursor, granularity),
+        fullLabel: granularity == StatsGranularity.day
+            ? formatStatsDayLabel(cursor)
+            : formatMonthYear(cursor),
+      ),
+    );
+    cursor = _nextBucket(cursor, granularity);
+  }
+  return series;
+}
+
+/// Soma das páginas das sessões, agrupada por dia ou por mês.
+///
+/// A linha do tempo vai da primeira à última sessão e inclui posições vazias
+/// com valor zero, para que a rolagem mostre o período contínuo.
+List<StatsDatum> pagesByPeriod(
+  List<ReadingSession> sessions,
+  StatsGranularity granularity,
+) {
+  final totals = <DateTime, double>{};
   for (final session in sessions) {
-    if (filter.period == StatsPeriod.month) {
-      if (session.date.year == reference.year &&
-          session.date.month == reference.month) {
-        add(session.date.day - 1, session.pagesRead.toDouble());
-      }
-    } else if (session.date.year == reference.year) {
-      add(session.date.month - 1, session.pagesRead.toDouble());
-    }
+    final bucket = _bucketStart(session.date, granularity);
+    totals[bucket] = (totals[bucket] ?? 0) + session.pagesRead;
   }
+  return _seriesFromBuckets(
+    totals.keys,
+    granularity,
+    (bucket) => totals[bucket] ?? 0,
+  );
+}
 
-  if (!pages) {
-    for (final reading in readings) {
-      final finishedAt = reading.finishedAt;
-      if (finishedAt == null) continue;
-      if (filter.period == StatsPeriod.month) {
-        if (finishedAt.year == reference.year &&
-            finishedAt.month == reference.month) {
-          add(finishedAt.day - 1, 1);
-        }
-      } else if (finishedAt.year == reference.year) {
-        add(finishedAt.month - 1, 1);
-      }
-    }
+/// Contagem de ciclos concluídos, agrupada pela data `fim` da leitura.
+///
+/// Cada leitura/releitura conta separadamente. Esta função não lê sessões:
+/// páginas e conclusões são grandezas distintas.
+List<StatsDatum> completedReadingsByPeriod(
+  List<Reading> readings,
+  StatsGranularity granularity,
+) {
+  final totals = <DateTime, double>{};
+  for (final reading in readings) {
+    final finishedAt = reading.finishedAt;
+    if (finishedAt == null) continue;
+    final bucket = _bucketStart(finishedAt, granularity);
+    totals[bucket] = (totals[bucket] ?? 0) + 1;
   }
-
-  return (
-    series: [
-      for (var index = 0; index < slots; index++)
-        StatsDatum(
-          label: filter.period == StatsPeriod.month
-              ? '${index + 1}'
-              : formatMonthShort(index + 1),
-          value: buckets[index],
-        ),
-    ],
-    hasData: buckets.any((value) => value > 0),
+  return _seriesFromBuckets(
+    totals.keys,
+    granularity,
+    (bucket) => totals[bucket] ?? 0,
   );
 }
 
@@ -236,24 +290,16 @@ StatsSummary buildStatsSummary(
   List<ReadingSession> sessions,
   StatsFilter filter,
 ) {
-  final pages = _periodSeries(
-    filter: filter,
-    sessions: sessions,
-    readings: readings,
-    pages: true,
-  );
-  final completed = _periodSeries(
-    filter: filter,
-    sessions: sessions,
-    readings: readings,
-    pages: false,
+  final pagesSeries = pagesByPeriod(sessions, filter.granularity);
+  final completedSeries = completedReadingsByPeriod(
+    readings,
+    filter.granularity,
   );
 
-  final worksById = <int, Work>{
-    for (final work in works) work.id: work,
-  };
+  final worksById = <int, Work>{for (final work in works) work.id: work};
   final ratedReadings = readings.where(
-    (reading) => reading.rating != null && worksById.containsKey(reading.workId),
+    (reading) =>
+        reading.rating != null && worksById.containsKey(reading.workId),
   );
 
   return StatsSummary(
@@ -266,8 +312,8 @@ StatsSummary buildStatsSummary(
       WorkType.values.map(AppStrings.workTypeLabel).toList(),
     ),
     genreCounts: _counts(works.map((work) => work.genre), const []),
-    pagesSeries: pages.series,
-    completedSeries: completed.series,
+    pagesSeries: pagesSeries,
+    completedSeries: completedSeries,
     ratingByGenre: _ratings(
       ratedReadings.map(
         (reading) => (worksById[reading.workId]!.genre, reading.rating!),
@@ -283,9 +329,9 @@ StatsSummary buildStatsSummary(
     hasWorks: works.isNotEmpty,
     hasReadings: readings.isNotEmpty,
     hasSessions: sessions.isNotEmpty,
-    hasPagesInPeriod: pages.hasData,
+    hasPagesInPeriod: pagesSeries.any((item) => item.value > 0),
     hasFinishedReadings: readings.any((reading) => reading.finishedAt != null),
-    hasCompletedInPeriod: completed.hasData,
+    hasCompletedInPeriod: completedSeries.any((item) => item.value > 0),
     hasRatings: ratedReadings.isNotEmpty,
   );
 }
@@ -299,6 +345,23 @@ final streakProvider = Provider<StreakInfo>((ref) {
       ref.watch(readingSessionsProvider).value ?? const <ReadingSession>[];
   return calculateStreak(sessions);
 });
+
+/// Provider nomeado para a série de páginas por período.
+final pagesByPeriodProvider = Provider.family<List<StatsDatum>, StatsFilter>((
+  ref,
+  filter,
+) {
+  final sessions =
+      ref.watch(readingSessionsProvider).value ?? const <ReadingSession>[];
+  return pagesByPeriod(sessions, filter.granularity);
+});
+
+/// Provider nomeado para a série de leituras concluídas por período.
+final completedReadingsByPeriodProvider =
+    Provider.family<List<StatsDatum>, StatsFilter>((ref, filter) {
+      final readings = ref.watch(readingsProvider).value ?? const <Reading>[];
+      return completedReadingsByPeriod(readings, filter.granularity);
+    });
 
 final statsProvider = Provider.family<StatsSummary, StatsFilter>((ref, filter) {
   final works = ref.watch(worksProvider).value ?? const <Work>[];

@@ -17,17 +17,8 @@ class StatsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
-  StatsPeriod _period = StatsPeriod.month;
-  DateTime _reference = DateTime(DateTime.now().year, DateTime.now().month);
+  StatsGranularity _granularity = StatsGranularity.day;
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month);
-
-  void _shiftPeriod(int delta) {
-    setState(() {
-      _reference = _period == StatsPeriod.month
-          ? DateTime(_reference.year, _reference.month + delta)
-          : DateTime(_reference.year + delta);
-    });
-  }
 
   void _shiftCalendar(int delta) {
     setState(() {
@@ -84,13 +75,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  StatsXAxisMode get _periodAxisMode => _period == StatsPeriod.month
+  StatsXAxisMode get _periodAxisMode => _granularity == StatsGranularity.day
       ? StatsXAxisMode.days
       : StatsXAxisMode.months;
 
   String Function(StatsDatum item, int index)? get _periodTooltipLabel =>
-      _period == StatsPeriod.month
-      ? (item, index) => formatDayMonth(index + 1, _reference)
+      _granularity == StatsGranularity.day
+      ? (item, index) => item.fullLabel ?? item.label
       : null;
 
   Widget _streakCard(StreakInfo streak) {
@@ -227,49 +218,23 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _periodSelector() {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      children: [
-        SegmentedButton<StatsPeriod>(
-          segments: const [
-            ButtonSegment(
-              value: StatsPeriod.month,
-              label: Text(AppStrings.periodMonth),
-            ),
-            ButtonSegment(
-              value: StatsPeriod.year,
-              label: Text(AppStrings.periodYear),
-            ),
-          ],
-          selected: {_period},
-          onSelectionChanged: (selection) => setState(() {
-            _period = selection.first;
-            _reference = DateTime(DateTime.now().year, DateTime.now().month);
-          }),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: () => _shiftPeriod(-1),
-              icon: const Icon(Icons.arrow_back),
-              tooltip: AppStrings.previousPeriod,
-            ),
-            Text(
-              _period == StatsPeriod.month
-                  ? formatMonthYear(_reference)
-                  : _reference.year.toString(),
-            ),
-            IconButton(
-              onPressed: () => _shiftPeriod(1),
-              icon: const Icon(Icons.arrow_forward),
-              tooltip: AppStrings.nextPeriod,
-            ),
-          ],
-        ),
-      ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SegmentedButton<StatsGranularity>(
+        segments: const [
+          ButtonSegment(
+            value: StatsGranularity.day,
+            label: Text(AppStrings.granularityDay),
+          ),
+          ButtonSegment(
+            value: StatsGranularity.month,
+            label: Text(AppStrings.periodMonth),
+          ),
+        ],
+        selected: {_granularity},
+        onSelectionChanged: (selection) =>
+            setState(() => _granularity = selection.first),
+      ),
     );
   }
 
@@ -303,7 +268,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     }
 
     final streak = ref.watch(streakProvider);
-    final filter = (period: _period, reference: _reference);
+    final filter = (granularity: _granularity);
     final summary = ref.watch(statsProvider(filter));
 
     return Scaffold(

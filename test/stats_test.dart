@@ -10,16 +10,15 @@ Work work({
   String title = 'Obra',
   String author = 'Autor',
   String genre = 'Gênero',
-}) =>
-    Work(
-      id: id,
-      type: type,
-      title: title,
-      author: author,
-      genre: genre,
-      status: WorkStatus.queroLer,
-      createdAt: DateTime(2026, 1, 1),
-    );
+}) => Work(
+  id: id,
+  type: type,
+  title: title,
+  author: author,
+  genre: genre,
+  status: WorkStatus.queroLer,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 Reading reading({
   required int id,
@@ -28,42 +27,34 @@ Reading reading({
   String status = WorkStatus.queroLer,
   double? rating,
   DateTime? finishedAt,
-}) =>
-    Reading(
-      id: id,
-      workId: workId,
-      number: number,
-      status: status,
-      rating: rating,
-      finishedAt: finishedAt,
-      createdAt: DateTime(2026, 1, 1),
-    );
+}) => Reading(
+  id: id,
+  workId: workId,
+  number: number,
+  status: status,
+  rating: rating,
+  finishedAt: finishedAt,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 ReadingSession session(DateTime date, int pagesRead) => ReadingSession(
-      id: 1,
-      workId: 1,
-      readingId: 1,
-      date: date,
-      pagesRead: pagesRead,
-      note: null,
-    );
+  id: 1,
+  workId: 1,
+  readingId: 1,
+  date: date,
+  pagesRead: pagesRead,
+  note: null,
+);
 
 StatsSummary summarize(
   List<Work> works,
   List<Reading> readings,
   List<ReadingSession> sessions, {
-  StatsPeriod period = StatsPeriod.month,
-  DateTime? reference,
-}) =>
-    buildStatsSummary(
-      works,
-      readings,
-      sessions,
-      (
-        period: period,
-        reference: reference ?? DateTime(2026, 11),
-      ),
-    );
+  StatsGranularity granularity = StatsGranularity.day,
+}) => buildStatsSummary(works, readings, sessions, (granularity: granularity));
+
+double total(List<StatsDatum> series) =>
+    series.fold<double>(0, (sum, item) => sum + item.value);
 
 void main() {
   setUpAll(() async {
@@ -86,15 +77,24 @@ void main() {
     );
 
     expect(
-      summary.statusCounts.where((item) => item.label == AppStrings.statusLido).single.value,
+      summary.statusCounts
+          .where((item) => item.label == AppStrings.statusLido)
+          .single
+          .value,
       2,
     );
     expect(
-      summary.statusCounts.where((item) => item.label == AppStrings.statusLendo).single.value,
+      summary.statusCounts
+          .where((item) => item.label == AppStrings.statusLendo)
+          .single
+          .value,
       1,
     );
     expect(
-      summary.typeCounts.where((item) => item.label == AppStrings.typeLivro).single.value,
+      summary.typeCounts
+          .where((item) => item.label == AppStrings.typeLivro)
+          .single
+          .value,
       2,
     );
     expect(
@@ -115,55 +115,124 @@ void main() {
 
     expect(summary.hasReadings, true);
     expect(
-      summary.statusCounts.where((item) => item.label == AppStrings.statusLido).single.value,
+      summary.statusCounts
+          .where((item) => item.label == AppStrings.statusLido)
+          .single
+          .value,
       1,
     );
     expect(
-      summary.statusCounts.where((item) => item.label == AppStrings.statusLendo).single.value,
+      summary.statusCounts
+          .where((item) => item.label == AppStrings.statusLendo)
+          .single
+          .value,
       1,
     );
   });
 
-  test('páginas lidas por mês e por ano', () {
-    final sessions = [
-      session(DateTime(2026, 11, 1), 10),
-      session(DateTime(2026, 11, 15), 20),
-      session(DateTime(2026, 11, 16), 5),
-      session(DateTime(2026, 10, 2), 30),
-      session(DateTime(2025, 12, 31), 40),
-    ];
+  test('páginas por dia preenche zeros e marca viradas de mês e ano', () {
+    final series = pagesByPeriod([
+      session(DateTime(2026, 10, 31), 10),
+      session(DateTime(2026, 11, 1), 20),
+      session(DateTime(2026, 11, 15), 5),
+      session(DateTime(2027, 1, 2), 7),
+    ], StatsGranularity.day);
 
-    final month = summarize([], [], sessions, reference: DateTime(2026, 11));
-    expect(month.pagesSeries[0].value, 10);
-    expect(month.pagesSeries[14].value, 20);
-    expect(month.pagesSeries[15].value, 5);
-    expect(month.hasPagesInPeriod, true);
-
-    final year = summarize([], [], sessions,
-        period: StatsPeriod.year, reference: DateTime(2026));
-    expect(year.pagesSeries[9].value, 30);
-    expect(year.pagesSeries[10].value, 35);
-    expect(year.pagesSeries.length, 12);
+    expect(series.length, 64);
+    expect(series.first.label, '31');
+    expect(series.first.value, 10);
+    expect(series[1].label, '1');
+    expect(series[1].value, 20);
+    expect(series[1].groupLabel, 'nov/2026');
+    expect(series[2].value, 0);
+    expect(series[15].value, 5);
+    expect(series[31].groupLabel, 'dez/2026');
+    expect(series[62].groupLabel, 'jan/2027');
+    expect(series.last.label, '2');
+    expect(series.last.value, 7);
+    expect(total(series), 42);
   });
 
-  test('leituras concluídas por mês e por ano, incluindo releituras', () {
+  test('páginas por mês preenche meses sem sessões', () {
+    final series = pagesByPeriod([
+      session(DateTime(2026, 10, 31), 10),
+      session(DateTime(2026, 11, 1), 20),
+      session(DateTime(2026, 11, 15), 5),
+      session(DateTime(2027, 1, 2), 7),
+    ], StatsGranularity.month);
+
+    expect(series.map((item) => item.label).toList(), [
+      formatMonthShort(10),
+      formatMonthShort(11),
+      formatMonthShort(12),
+      formatMonthShort(1),
+    ]);
+    expect(series.map((item) => item.value).toList(), [10, 25, 0, 7]);
+    expect(series.last.groupLabel, '2027');
+  });
+
+  test('leituras concluídas por dia conta cada ciclo na data de conclusão', () {
+    final series = completedReadingsByPeriod([
+      reading(id: 1, workId: 1, finishedAt: DateTime(2026, 10, 31)),
+      reading(id: 2, workId: 1, number: 2, finishedAt: DateTime(2026, 11, 1)),
+      reading(id: 3, workId: 1, number: 3, finishedAt: DateTime(2026, 11, 1)),
+      reading(id: 4, workId: 2, finishedAt: DateTime(2027, 1, 2)),
+    ], StatsGranularity.day);
+
+    expect(series.length, 64);
+    expect(series.first.value, 1);
+    expect(series[1].value, 2);
+    expect(series[2].value, 0);
+    expect(series[63].value, 1);
+    expect(total(series), 4);
+    expect(
+      series.every((item) => item.value == item.value.roundToDouble()),
+      isTrue,
+    );
+  });
+
+  test('leituras concluídas por mês inclui releituras e zeros', () {
+    final series = completedReadingsByPeriod([
+      reading(id: 1, workId: 1, finishedAt: DateTime(2026, 10, 31)),
+      reading(id: 2, workId: 1, number: 2, finishedAt: DateTime(2026, 11, 1)),
+      reading(id: 3, workId: 1, number: 3, finishedAt: DateTime(2026, 11, 1)),
+      reading(id: 4, workId: 2, finishedAt: DateTime(2027, 1, 2)),
+    ], StatsGranularity.month);
+
+    expect(series.map((item) => item.value).toList(), [1, 2, 0, 1]);
+    expect(series.last.groupLabel, '2027');
+  });
+
+  test('regressão: páginas e conclusões nunca são a mesma série', () {
+    final sessions = [
+      session(DateTime(2026, 11, 3), 12),
+      session(DateTime(2026, 11, 20), 18),
+    ];
     final readings = [
       reading(id: 1, workId: 1, finishedAt: DateTime(2026, 11, 3)),
-      reading(id: 2, workId: 1, number: 2, finishedAt: DateTime(2026, 11, 20)),
-      reading(id: 3, workId: 2, finishedAt: DateTime(2026, 10, 1)),
-      reading(id: 4, workId: 3, finishedAt: DateTime(2025, 12, 31)),
     ];
+    final summary = summarize([work(id: 1)], readings, sessions);
 
-    final month = summarize([work(id: 1), work(id: 2)], readings, const [],
-        reference: DateTime(2026, 11));
-    expect(month.completedSeries[2].value, 1);
-    expect(month.completedSeries[19].value, 1);
-    expect(month.hasCompletedInPeriod, true);
+    expect(total(summary.pagesSeries), 30);
+    expect(total(summary.completedSeries), 1);
+    expect(summary.completedSeries, isNot(summary.pagesSeries));
+    expect(
+      summary.completedSeries.map((item) => item.value).toList(),
+      isNot(summary.pagesSeries.map((item) => item.value).toList()),
+    );
+  });
 
-    final year = summarize([], readings, const [],
-        period: StatsPeriod.year, reference: DateTime(2026));
-    expect(year.completedSeries[9].value, 1);
-    expect(year.completedSeries[10].value, 2);
+  test('séries vazias', () {
+    final empty = summarize(const [], const [], const []);
+    expect(empty.pagesSeries, isEmpty);
+    expect(empty.completedSeries, isEmpty);
+    expect(empty.hasWorks, false);
+    expect(empty.hasReadings, false);
+    expect(empty.hasSessions, false);
+    expect(empty.hasPagesInPeriod, false);
+    expect(empty.hasFinishedReadings, false);
+    expect(empty.hasCompletedInPeriod, false);
+    expect(empty.hasRatings, false);
   });
 
   test('nota média considera cada leitura e informa a quantidade', () {
@@ -186,32 +255,11 @@ void main() {
     expect(genre.value, 4.5);
     expect(genre.detail, AppStrings.readingCountLabel(2));
 
-    final author = summary.ratingByAuthor.where((item) => item.label == 'A').single;
+    final author = summary.ratingByAuthor
+        .where((item) => item.label == 'A')
+        .single;
     expect(author.value, 4.5);
     expect(author.detail, AppStrings.readingCountLabel(2));
     expect(summary.ratingByAuthor.where((item) => item.label == 'C'), isEmpty);
-  });
-
-  test('estados vazios', () {
-    final empty = summarize(const [], const [], const []);
-    expect(empty.hasWorks, false);
-    expect(empty.hasReadings, false);
-    expect(empty.hasSessions, false);
-    expect(empty.hasPagesInPeriod, false);
-    expect(empty.hasFinishedReadings, false);
-    expect(empty.hasCompletedInPeriod, false);
-    expect(empty.hasRatings, false);
-
-    final noDataInPeriod = summarize(
-      [work(id: 1)],
-      [reading(id: 1, workId: 1, rating: 4)],
-      [session(DateTime(2025, 1, 1), 10)],
-      reference: DateTime(2026, 11),
-    );
-    expect(noDataInPeriod.hasWorks, true);
-    expect(noDataInPeriod.hasReadings, true);
-    expect(noDataInPeriod.hasSessions, true);
-    expect(noDataInPeriod.hasPagesInPeriod, false);
-    expect(noDataInPeriod.hasRatings, true);
   });
 }

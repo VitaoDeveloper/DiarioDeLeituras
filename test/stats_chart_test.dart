@@ -143,27 +143,23 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('seletor Mês/Ano troca o período e o vazio é legível', (
+  testWidgets('seletor Dia/Mês troca a granularidade e o vazio é legível', (
     tester,
   ) async {
-    final now = DateTime.now();
     await tester.pumpWidget(_emptyStatsScreen());
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(formatMonthYear(DateTime(now.year, now.month))),
-      findsWidgets,
-    );
+    expect(find.text(AppStrings.granularityDay), findsOneWidget);
+    expect(find.text(AppStrings.periodMonth), findsOneWidget);
     expect(find.text(AppStrings.emptyWorksChart), findsWidgets);
     expect(find.text(AppStrings.emptySessionsChart), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text(AppStrings.periodYear), 200);
+    await tester.scrollUntilVisible(find.text(AppStrings.periodMonth), 200);
     await tester.pumpAndSettle();
-    await tester.tap(find.text(AppStrings.periodYear));
+    await tester.tap(find.text(AppStrings.periodMonth));
     await tester.pumpAndSettle();
 
-    expect(find.text(now.year.toString()), findsOneWidget);
-    expect(find.text(AppStrings.periodMonth), findsOneWidget);
+    expect(find.text(AppStrings.granularityDay), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

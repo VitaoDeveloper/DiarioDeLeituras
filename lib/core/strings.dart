@@ -57,6 +57,7 @@ abstract final class AppStrings {
   static const String completedChart = 'Leituras concluídas';
   static const String ratingByGenre = 'Nota média por gênero';
   static const String ratingByAuthor = 'Nota média por autor';
+  static const String granularityDay = 'Dia';
   static const String periodMonth = 'Mês';
   static const String periodYear = 'Ano';
   static const String previousPeriod = 'Período anterior';
