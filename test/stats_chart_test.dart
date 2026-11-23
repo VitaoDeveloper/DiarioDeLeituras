@@ -38,6 +38,7 @@ void main() {
         38: (maxY: 50, interval: 20),
         134: (maxY: 200, interval: 50),
         162: (maxY: 200, interval: 50),
+        180: (maxY: 200, interval: 50),
         1000: (maxY: 1000, interval: 500),
       };
 
@@ -50,7 +51,12 @@ void main() {
           reason: 'interval de ${entry.key}',
         );
         expect(axis.interval, greaterThanOrEqualTo(1));
-        expect(axis.maxY / axis.interval, lessThanOrEqualTo(4));
+        expect(statsAxisValues(axis).length, lessThanOrEqualTo(5));
+        expect(statsAxisValues(axis).last, lessThanOrEqualTo(axis.maxY));
+        expect(
+          statsAxisValues(axis).every((tick) => tick == tick.roundToDouble()),
+          isTrue,
+        );
       }
     });
 

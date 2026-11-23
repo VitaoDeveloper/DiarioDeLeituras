@@ -22,6 +22,15 @@ NiceAxis niceAxis(double maxValue) {
   return (maxY: maxY, interval: interval < 1 ? 1 : interval);
 }
 
+/// Valores que recebem rótulo/linha no eixo Y, de zero até [axis.maxY].
+List<double> statsAxisValues(NiceAxis axis) {
+  final values = <double>[];
+  for (var value = 0.0; value <= axis.maxY + 1e-9; value += axis.interval) {
+    values.add(value);
+  }
+  return values;
+}
+
 double _niceCeiling(double value) {
   if (!value.isFinite || value <= 1) return 1;
   final exponent = (math.log(value) / math.ln10).floor();
@@ -254,10 +263,9 @@ class _StatsBarChartState extends State<StatsBarChart> {
                     show: true,
                     drawVerticalLine: false,
                     horizontalInterval: axis.interval,
-                    checkToShowHorizontalLine: (value) =>
-                        value >= 0 &&
-                        value <= axis.maxY + 1e-6 &&
-                        (value - value.round()).abs() < 1e-6,
+                    checkToShowHorizontalLine: (value) => statsAxisValues(
+                      axis,
+                    ).any((tick) => (tick - value).abs() < 1e-6),
                     getDrawingHorizontalLine: (_) => FlLine(
                       color: colors.outline.withValues(
                         alpha: theme.brightness == Brightness.dark ? 0.55 : 0.4,
