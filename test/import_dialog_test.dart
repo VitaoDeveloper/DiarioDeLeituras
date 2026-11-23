@@ -86,8 +86,9 @@ void main() {
     await db.close();
   }
 
-  testWidgets('confirmar importação executa a importação e mantém a tela',
-      (tester) async {
+  testWidgets('confirmar importação executa a importação e volta para Obras', (
+    tester,
+  ) async {
     await pumpSettings(tester);
     expect(find.text(AppStrings.exportData), findsOneWidget);
 
@@ -105,7 +106,9 @@ void main() {
 
     expect(service.imported, isTrue);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text(AppStrings.exportData), findsOneWidget);
+    // A restauração bem-sucedida leva de volta à lista de obras.
+    expect(find.text(AppStrings.importSuccess), findsOneWidget);
+    expect(find.text(AppStrings.works), findsWidgets);
     expect(tester.takeException(), isNull);
     await closeApp(tester);
   });

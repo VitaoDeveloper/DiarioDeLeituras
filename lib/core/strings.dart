@@ -16,10 +16,10 @@ abstract final class AppStrings {
   static const String importSuccess = 'Dados importados.';
   static const String exportError = 'Não foi possível exportar os dados.';
   static const String importError = 'Não foi possível importar os dados.';
-  static const String invalidJson = 'Arquivo inválido: não é um JSON de backup.';
+  static const String invalidJson =
+      'Arquivo inválido: não é um JSON de backup.';
   static const String invalidBackup = 'Arquivo de backup inválido.';
-  static const String unsupportedVersion =
-      'Versão de backup não suportada.';
+  static const String unsupportedVersion = 'Versão de backup não suportada.';
   static const String noteSingular = 'fichamento';
   static const String notePlural = 'fichamentos';
   static const String analysisSingular = 'análise';
@@ -31,7 +31,12 @@ abstract final class AppStrings {
   static String analysisCountLabel(int count) =>
       '$count ${count == 1 ? analysisSingular : analysisPlural}';
 
-  static String importSummary(int works, int readings, int notes, int analyses) =>
+  static String importSummary(
+    int works,
+    int readings,
+    int notes,
+    int analyses,
+  ) =>
       '${workCountLabel(works)}\n'
       '${readingCountLabel(readings)}\n'
       '${noteCountLabel(notes)}\n'
@@ -74,8 +79,22 @@ abstract final class AppStrings {
       'Registre sessões de leitura para ver este gráfico.';
   static const String emptyFinishedChart =
       'Marque uma leitura como lida para ver este gráfico.';
-  static const String emptyRatingsChart = 'Avalie leituras para ver este gráfico.';
+  static const String emptyRatingsChart =
+      'Avalie leituras para ver este gráfico.';
   static const String emptyPeriod = 'Nenhum dado neste período.';
+
+  // Resumo e tooltips dos gráficos de estatísticas.
+  static const String chartTotalLabel = 'Total';
+  static const String chartItemCountLabel = 'Itens';
+  static const String showAll = 'Ver todos';
+  static const String showLess = 'Ver menos';
+  static const String pageSingular = 'página';
+  static const String pagePlural = 'páginas';
+
+  static String chartSummary(String label, String value) => '$label: $value';
+
+  static String pageCountLabel(int count) =>
+      '$count ${count == 1 ? pageSingular : pagePlural}';
 
   static String streakLabel(int count) =>
       '$count ${count == 1 ? streakDaySingular : streakDaysPlural}';
@@ -183,7 +202,8 @@ abstract final class AppStrings {
   static const String invalidAnalysis = 'Análise não encontrada.';
   static const String searchAnalyses = 'Buscar análises';
   static const String analysisBody = 'Texto';
-  static const String autoSaveHint = 'As alterações são salvas ao sair da tela.';
+  static const String autoSaveHint =
+      'As alterações são salvas ao sair da tela.';
   static const String noAnalyses = 'Nenhuma análise cadastrada.';
   static const String noAnalysesFilter = 'Nenhuma análise com esse título.';
   static const String analysisSaved = 'Análise salva.';
@@ -243,14 +263,14 @@ abstract final class AppStrings {
   static const String sessionSaved = 'Sessão salva.';
 
   static String workTypeLabel(String value) => switch (value) {
-        'livro' => typeLivro,
-        'artigo' => typeArtigo,
-        _ => typeOutro,
-      };
+    'livro' => typeLivro,
+    'artigo' => typeArtigo,
+    _ => typeOutro,
+  };
 
   static String workStatusLabel(String value) => switch (value) {
-        'quero_ler' => statusQueroLer,
-        'lendo' => statusLendo,
-        _ => statusLido,
-      };
+    'quero_ler' => statusQueroLer,
+    'lendo' => statusLendo,
+    _ => statusLido,
+  };
 }

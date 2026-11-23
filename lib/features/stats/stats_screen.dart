@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +6,7 @@ import '../../core/formatters.dart';
 import '../../core/strings.dart';
 import '../works/readings_providers.dart';
 import '../works/works_providers.dart';
+import 'stats_chart.dart';
 import 'stats_providers.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -38,111 +38,60 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     });
   }
 
-  Widget _barChart(List<StatsDatum> data) {
-    final color = Theme.of(context).colorScheme.primary;
-    final maxValue = data.fold<double>(
-      0,
-      (max, item) => item.value > max ? item.value : max,
-    );
-    final labelInterval = data.length > 12 ? (data.length / 8).ceil() : 1;
-
-    return SizedBox(
-      height: 200,
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: maxValue == 0 ? 1 : maxValue * 1.2,
-          borderData: FlBorderData(show: false),
-          gridData: const FlGridData(show: false),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 32,
-                getTitlesWidget: (value, meta) => Text(
-                  value.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 32,
-                interval: labelInterval.toDouble(),
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index < 0 || index >= data.length) {
-                    return const SizedBox.shrink();
-                  }
-                  final label = data[index].label;
-                  final shortLabel = label.length > 8
-                      ? '${label.substring(0, 8)}…'
-                      : label;
-                  return SideTitleWidget(
-                    meta: meta,
-                    child: Text(shortLabel, style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-          ),
-          barGroups: [
-            for (var index = 0; index < data.length; index++)
-              BarChartGroupData(
-                x: index,
-                barRods: [
-                  BarChartRodData(
-                    toY: data[index].value,
-                    color: color,
-                    width: 12,
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _chartCard(
     String title,
     List<StatsDatum> data,
     String? emptyMessage, {
-    bool showDetail = false,
+    required StatsValueKind kind,
+    StatsXAxisMode mode = StatsXAxisMode.categories,
+    bool horizontal = false,
+    int maxInitialItems = 8,
+    double height = 220,
+    String Function(StatsDatum item, int index)? tooltipLabelBuilder,
   }) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (emptyMessage != null)
-              Text(emptyMessage)
-            else ...[
-              _barChart(data),
-              if (showDetail) ...[
-                const SizedBox(height: 8),
-                for (final item in data)
-                  Text(
-                    '${item.label}: ${formatRating(item.value)} '
-                    '(${item.detail ?? ''})',
-                  ),
-              ],
+            Text(title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 2),
+            if (emptyMessage != null) ...[
+              const SizedBox(height: 6),
+              Text(emptyMessage, style: theme.textTheme.bodySmall),
+            ] else ...[
+              const SizedBox(height: 6),
+              Text(
+                statsSummaryText(kind, data),
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              StatsBarChart(
+                data: data,
+                kind: kind,
+                mode: mode,
+                horizontal: horizontal,
+                maxInitialItems: maxInitialItems,
+                height: height,
+                tooltipLabelBuilder: tooltipLabelBuilder,
+              ),
             ],
           ],
         ),
       ),
     );
   }
+
+  StatsXAxisMode get _periodAxisMode => _period == StatsPeriod.month
+      ? StatsXAxisMode.days
+      : StatsXAxisMode.months;
+
+  String Function(StatsDatum item, int index)? get _periodTooltipLabel =>
+      _period == StatsPeriod.month
+      ? (item, index) => formatDayMonth(index + 1, _reference)
+      : null;
 
   Widget _streakCard(StreakInfo streak) {
     return Card(
@@ -189,7 +138,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _dayCell(int day, Set<int> readDays) {
-    final key = dayKey(DateTime(_calendarMonth.year, _calendarMonth.month, day));
+    final key = dayKey(
+      DateTime(_calendarMonth.year, _calendarMonth.month, day),
+    );
     final read = readDays.contains(key);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -209,11 +160,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       _calendarMonth.month + 1,
       0,
     ).day;
-    final leading = DateTime(
-      _calendarMonth.year,
-      _calendarMonth.month,
-      1,
-    ).weekday - 1;
+    final leading =
+        DateTime(_calendarMonth.year, _calendarMonth.month, 1).weekday - 1;
     final cells = <int?>[
       for (var index = 0; index < leading; index++) null,
       for (var day = 1; day <= daysInMonth; day++) day,
@@ -232,7 +180,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           children: [
             for (var offset = 0; offset < 7; offset++) ...[
               Center(
-                child: index + offset < cells.length &&
+                child:
+                    index + offset < cells.length &&
                         cells[index + offset] != null
                     ? _dayCell(cells[index + offset]!, readDays)
                     : const SizedBox.shrink(),
@@ -257,9 +206,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   tooltip: AppStrings.previousPeriod,
                 ),
                 Expanded(
-                  child: Center(
-                    child: Text(formatMonthYear(_calendarMonth)),
-                  ),
+                  child: Center(child: Text(formatMonthYear(_calendarMonth))),
                 ),
                 IconButton(
                   onPressed: () => _shiftCalendar(1),
@@ -381,20 +328,25 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               summary.hasReadings
                   ? null
                   : summary.hasWorks
-                      ? AppStrings.emptyReadingsChart
-                      : AppStrings.emptyWorksChart,
+                  ? AppStrings.emptyReadingsChart
+                  : AppStrings.emptyWorksChart,
+              kind: StatsValueKind.readings,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.typeChart,
               summary.typeCounts,
               summary.hasWorks ? null : AppStrings.emptyWorksChart,
+              kind: StatsValueKind.works,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.genreChart,
               summary.genreCounts,
               summary.hasWorks ? null : AppStrings.emptyWorksChart,
+              kind: StatsValueKind.works,
+              horizontal: true,
+              height: 300,
             ),
             const SizedBox(height: 16),
             _chartCard(
@@ -403,8 +355,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               !summary.hasSessions
                   ? AppStrings.emptySessionsChart
                   : summary.hasPagesInPeriod
-                      ? null
-                      : AppStrings.emptyPeriod,
+                  ? null
+                  : AppStrings.emptyPeriod,
+              kind: StatsValueKind.pages,
+              mode: _periodAxisMode,
+              tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),
             _chartCard(
@@ -413,22 +368,31 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               !summary.hasFinishedReadings
                   ? AppStrings.emptyFinishedChart
                   : summary.hasCompletedInPeriod
-                      ? null
-                      : AppStrings.emptyPeriod,
+                  ? null
+                  : AppStrings.emptyPeriod,
+              kind: StatsValueKind.readings,
+              mode: _periodAxisMode,
+              tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.ratingByGenre,
               summary.ratingByGenre,
               summary.hasRatings ? null : AppStrings.emptyRatingsChart,
-              showDetail: true,
+              kind: StatsValueKind.ratings,
+              horizontal: true,
+              maxInitialItems: 6,
+              height: 280,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.ratingByAuthor,
               summary.ratingByAuthor,
               summary.hasRatings ? null : AppStrings.emptyRatingsChart,
-              showDetail: true,
+              kind: StatsValueKind.ratings,
+              horizontal: true,
+              maxInitialItems: 6,
+              height: 280,
             ),
           ],
         ),
