@@ -42,6 +42,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     int maxInitialItems = 8,
     double height = 220,
     bool periodSummary = false,
+    bool scrollable = false,
     String Function(StatsDatum item, int index)? tooltipLabelBuilder,
   }) {
     final theme = Theme.of(context);
@@ -82,6 +83,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 kind: kind,
                 mode: mode,
                 horizontal: horizontal,
+                scrollable: scrollable,
                 maxInitialItems: maxInitialItems,
                 height: height,
                 tooltipLabelBuilder: tooltipLabelBuilder,
@@ -375,6 +377,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               kind: StatsValueKind.pages,
               mode: _periodAxisMode,
               periodSummary: true,
+              scrollable: true,
               tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),
@@ -395,6 +398,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               kind: StatsValueKind.readings,
               mode: _periodAxisMode,
               periodSummary: true,
+              scrollable: true,
               tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),

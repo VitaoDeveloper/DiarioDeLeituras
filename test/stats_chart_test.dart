@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -179,6 +180,90 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(StatsBarChart), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('largura padrão do slot das barras fica entre 36 e 48 dp', () {
+    const chart = StatsBarChart(data: [], kind: StatsValueKind.pages);
+    expect(chart.barSlotWidth, inInclusiveRange(36, 48));
+  });
+
+  testWidgets('período abre no dado mais recente e rola até o mais antigo', (
+    tester,
+  ) async {
+    final data = [
+      for (var day = 1; day <= 40; day++)
+        StatsDatum(
+          label: '$day',
+          value: day == 1
+              ? 5
+              : day == 40
+              ? 134
+              : 0,
+          groupLabel: day == 1
+              ? 'nov/2026'
+              : day == 32
+              ? 'dez/2026'
+              : null,
+          fullLabel: '$day de nov de 2026',
+        ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 220,
+            child: StatsBarChart(
+              data: data,
+              kind: StatsValueKind.pages,
+              mode: StatsXAxisMode.days,
+              scrollable: true,
+              tooltipLabelBuilder: (item, index) =>
+                  item.fullLabel ?? item.label,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollFinder = find.byType(SingleChildScrollView);
+    expect(scrollFinder, findsOneWidget);
+    final controller = tester
+        .widget<SingleChildScrollView>(scrollFinder)
+        .controller!;
+    expect(controller.position.maxScrollExtent, greaterThan(0));
+    expect(controller.offset, controller.position.maxScrollExtent);
+    expect(find.text('40'), findsOneWidget);
+
+    // O eixo Y com os valores numéricos fica fora da área rolável.
+    expect(find.text('200'), findsOneWidget);
+    expect(
+      find.descendant(of: scrollFinder, matching: find.text('200')),
+      findsNothing,
+    );
+
+    // Tooltip continua disponível no toque e usa o rótulo completo da data.
+    final barChart = tester.widget<BarChart>(find.byType(BarChart));
+    expect(barChart.data.barTouchData.enabled, isTrue);
+    final tooltip = barChart.data.barTouchData.touchTooltipData.getTooltipItem(
+      BarChartGroupData(x: 39, barRods: [BarChartRodData(toY: 134)]),
+      39,
+      BarChartRodData(toY: 134),
+      0,
+    );
+    expect(tooltip, isNotNull);
+    expect(tooltip!.text, contains('40 de nov de 2026'));
+    expect(tooltip.text, contains('134'));
+
+    controller.jumpTo(0);
+    await tester.pumpAndSettle();
+
+    expect(controller.offset, 0);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('nov/2026'), findsOneWidget);
+    expect(find.text('dez/2026'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -42,10 +42,8 @@ double _niceCeiling(double value) {
   return 10 * magnitude;
 }
 
-/// Dias do mês que recebem rótulo no eixo X.
-///
-/// Mantém 1, 5, 10, 15, 20, 25 e o último dia, descartando qualquer rótulo
-/// que ficasse a menos de três posições do anterior (meses curtos).
+/// Dias do mês que recebem rótulo no eixo X quando a escala é compartilhada
+/// por vários meses. Com rolagem, todas as posições recebem rótulo próprio.
 Set<int> visibleMonthDayLabels(int daysInMonth) {
   if (daysInMonth <= 0) return const <int>{};
   final candidates = <int>{
@@ -123,7 +121,8 @@ String statsSummaryText(
 ///
 /// Centraliza eixos, grade, tooltips, largura das barras e arredondamento das
 /// pontas. Com [horizontal], o gráfico é girado 90 graus e as categorias passam
-/// para o eixo esquerdo, evitando rótulos longos sobrepostos.
+/// para o eixo esquerdo. Com [scrollable], as barras ficam em uma área rolável
+/// com largura fixa por item e o eixo Y permanece visível do lado de fora.
 class StatsBarChart extends StatefulWidget {
   const StatsBarChart({
     super.key,
@@ -131,6 +130,8 @@ class StatsBarChart extends StatefulWidget {
     required this.kind,
     this.mode = StatsXAxisMode.categories,
     this.horizontal = false,
+    this.scrollable = false,
+    this.barSlotWidth = 40,
     this.maxInitialItems = 8,
     this.height = 220,
     this.tooltipLabelBuilder,
@@ -140,10 +141,14 @@ class StatsBarChart extends StatefulWidget {
   final StatsValueKind kind;
   final StatsXAxisMode mode;
   final bool horizontal;
+  final bool scrollable;
+
+  /// Espaço reservado para cada barra quando o gráfico é rolável (36 a 48 dp).
+  final double barSlotWidth;
   final int maxInitialItems;
   final double height;
 
-  /// Permite usar "21 de nov" no tooltip enquanto o eixo mostra apenas "21".
+  /// Permite usar o rótulo completo da data no tooltip.
   final String Function(StatsDatum item, int index)? tooltipLabelBuilder;
 
   @override
@@ -151,7 +156,37 @@ class StatsBarChart extends StatefulWidget {
 }
 
 class _StatsBarChartState extends State<StatsBarChart> {
+  final ScrollController _scrollController = ScrollController();
+  bool _didJumpToLatest = false;
   bool _showAll = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant StatsBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.data.length != oldWidget.data.length ||
+        widget.scrollable != oldWidget.scrollable) {
+      _didJumpToLatest = false;
+    }
+  }
+
+  void _scheduleScrollToLatest() {
+    if (_didJumpToLatest || !widget.scrollable) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didJumpToLatest) return;
+      final controller = _scrollController;
+      if (!controller.hasClients) return;
+      final target = controller.position.maxScrollExtent;
+      // Evita notificar rolagem quando toda a série já cabe na tela.
+      if (target > 0) controller.jumpTo(target);
+      _didJumpToLatest = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +201,7 @@ class _StatsBarChartState extends State<StatsBarChart> {
     if (ordered.isEmpty) return const SizedBox.shrink();
 
     // "Ver todos" só faz sentido em gráficos horizontais de categorias;
-    // nos gráficos por período a navegação já é feita pelo seletor Mês/Ano.
+    // nos gráficos por período a rolagem já percorre toda a linha do tempo.
     final canCollapse =
         widget.horizontal && ordered.length > widget.maxInitialItems;
     final visible = canCollapse && !_showAll
@@ -179,9 +214,13 @@ class _StatsBarChartState extends State<StatsBarChart> {
     );
     final axis = niceAxis(maxValue);
     final integerValues = widget.kind != StatsValueKind.ratings;
-    final dayLabels = widget.mode == StatsXAxisMode.days
-        ? visibleMonthDayLabels(visible.length)
-        : const <int>{};
+    final bottomReserved = widget.scrollable
+        ? 44.0
+        : switch (widget.mode) {
+            StatsXAxisMode.days => 32.0,
+            StatsXAxisMode.months => 44.0,
+            StatsXAxisMode.categories => widget.horizontal ? 100.0 : 56.0,
+          };
 
     Widget valueTitle(double value, TitleMeta meta) {
       if (value < 0 || value > axis.maxY + 1e-6) {
@@ -212,8 +251,6 @@ class _StatsBarChartState extends State<StatsBarChart> {
       late final String text;
       switch (widget.mode) {
         case StatsXAxisMode.days:
-          final day = index + 1;
-          if (!dayLabels.contains(day)) return const SizedBox.shrink();
           text = item.label;
         case StatsXAxisMode.months:
           text = item.label;
@@ -223,24 +260,179 @@ class _StatsBarChartState extends State<StatsBarChart> {
             maxLength: widget.horizontal ? 14 : 8,
           );
       }
+      final group = item.groupLabel;
+      final child = widget.scrollable
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (group != null && group.isNotEmpty)
+                  Text(
+                    group,
+                    style: labelStyle.copyWith(
+                      fontSize: 9,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                Text(
+                  text,
+                  style: labelStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            )
+          : Text(
+              text,
+              style: labelStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
       return SideTitleWidget(
         meta: meta,
         space: 4,
-        fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-        child: Text(
-          text,
-          style: labelStyle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        // Na rolagem cada rótulo já tem seu próprio slot; forçá-los para dentro
+        // de um gráfico estreito (uma única barra) gera laço de layout.
+        fitInside: widget.scrollable
+            ? SideTitleFitInsideData.disable()
+            : SideTitleFitInsideData.fromTitleMeta(meta),
+        child: child,
       );
     }
 
-    final bottomReserved = switch (widget.mode) {
-      StatsXAxisMode.days => 32.0,
-      StatsXAxisMode.months => 44.0,
-      StatsXAxisMode.categories => widget.horizontal ? 100.0 : 56.0,
-    };
+    BarChartData chartData(double barWidth) => BarChartData(
+      minY: 0,
+      maxY: axis.maxY,
+      alignment: BarChartAlignment.spaceAround,
+      rotationQuarterTurns: widget.horizontal ? 1 : 0,
+      borderData: FlBorderData(show: false),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: axis.interval,
+        checkToShowHorizontalLine: (value) =>
+            statsAxisValues(axis).any((tick) => (tick - value).abs() < 1e-6),
+        getDrawingHorizontalLine: (_) => FlLine(
+          color: colors.outline.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.55 : 0.4,
+          ),
+          strokeWidth: AppTokens.borderWidth,
+        ),
+      ),
+      titlesData: FlTitlesData(
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: !widget.scrollable,
+            reservedSize: widget.scrollable ? 0 : 48,
+            interval: axis.interval,
+            getTitlesWidget: valueTitle,
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: bottomReserved,
+            // Cada barra tem sua própria posição; o filtro de dias era feito
+            // aqui antes da rolagem e não se aplica mais.
+            interval: 1,
+            getTitlesWidget: categoryTitle,
+          ),
+        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+      ),
+      barTouchData: BarTouchData(
+        enabled: true,
+        touchExtraThreshold: const EdgeInsets.symmetric(
+          horizontal: 6,
+          vertical: 4,
+        ),
+        touchTooltipData: BarTouchTooltipData(
+          tooltipMargin: 8,
+          tooltipPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          tooltipBorderRadius: BorderRadius.circular(AppTokens.radius / 2),
+          tooltipBorder: BorderSide(
+            color: colors.outline,
+            width: AppTokens.borderWidth,
+          ),
+          maxContentWidth: 220,
+          fitInsideHorizontally: true,
+          fitInsideVertically: true,
+          getTooltipColor: (_) => colors.surface,
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            final index = group.x;
+            if (index < 0 || index >= visible.length || rod.toY <= 0) {
+              return null;
+            }
+            final item = visible[index];
+            final label =
+                widget.tooltipLabelBuilder?.call(item, index) ??
+                item.fullLabel ??
+                item.label;
+            return BarTooltipItem(
+              '$label\n'
+              '${statsValueText(widget.kind, item.value, detail: item.detail)}',
+              theme.textTheme.bodySmall!.copyWith(
+                color: colors.onSurface,
+                fontSize: 11,
+              ),
+            );
+          },
+        ),
+      ),
+      barGroups: [
+        for (var index = 0; index < visible.length; index++)
+          BarChartGroupData(
+            x: index,
+            barRods: [
+              if (visible[index].value > 0)
+                BarChartRodData(
+                  toY: math.max(visible[index].value, axis.maxY * 0.02),
+                  color: colors.primary,
+                  width: barWidth,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(3),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+
+    Widget chart(double barWidth) =>
+        BarChart(chartData(barWidth), duration: Duration.zero);
+
+    if (widget.scrollable) {
+      _scheduleScrollToLatest();
+      return SizedBox(
+        height: widget.height,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _fixedYAxis(axis, labelStyle, bottomReserved),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: visible.length * widget.barSlotWidth,
+                  height: widget.height,
+                  child: chart(widget.barSlotWidth * 0.6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -250,127 +442,12 @@ class _StatsBarChartState extends State<StatsBarChart> {
           height: widget.height,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final extent = widget.horizontal
-                  ? constraints.maxHeight
-                  : constraints.maxWidth;
-              final barWidth = _clamp(extent / visible.length * 0.62, 4, 18);
-              final minVisibleHeight = axis.maxY * 0.02;
-
-              return BarChart(
-                BarChartData(
-                  minY: 0,
-                  maxY: axis.maxY,
-                  alignment: BarChartAlignment.spaceAround,
-                  rotationQuarterTurns: widget.horizontal ? 1 : 0,
-                  borderData: FlBorderData(show: false),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: axis.interval,
-                    checkToShowHorizontalLine: (value) => statsAxisValues(
-                      axis,
-                    ).any((tick) => (tick - value).abs() < 1e-6),
-                    getDrawingHorizontalLine: (_) => FlLine(
-                      color: colors.outline.withValues(
-                        alpha: theme.brightness == Brightness.dark ? 0.55 : 0.4,
-                      ),
-                      strokeWidth: AppTokens.borderWidth,
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 48,
-                        interval: axis.interval,
-                        getTitlesWidget: valueTitle,
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: bottomReserved,
-                        // Garante que todas as posições sejam avaliadas; o
-                        // filtro de dias acontece em categoryTitle.
-                        interval: 1,
-                        getTitlesWidget: categoryTitle,
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchExtraThreshold: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipMargin: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      tooltipBorderRadius: BorderRadius.circular(
-                        AppTokens.radius / 2,
-                      ),
-                      tooltipBorder: BorderSide(
-                        color: colors.outline,
-                        width: AppTokens.borderWidth,
-                      ),
-                      maxContentWidth: 200,
-                      fitInsideHorizontally: true,
-                      fitInsideVertically: true,
-                      getTooltipColor: (_) => colors.surface,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final index = group.x;
-                        if (index < 0 ||
-                            index >= visible.length ||
-                            rod.toY <= 0) {
-                          return null;
-                        }
-                        final item = visible[index];
-                        final label =
-                            widget.tooltipLabelBuilder?.call(item, index) ??
-                            item.label;
-                        return BarTooltipItem(
-                          '$label\n'
-                          '${statsValueText(widget.kind, item.value, detail: item.detail)}',
-                          theme.textTheme.bodySmall!.copyWith(
-                            color: colors.onSurface,
-                            fontSize: 11,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  barGroups: [
-                    for (var index = 0; index < visible.length; index++)
-                      BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          if (visible[index].value > 0)
-                            BarChartRodData(
-                              toY: math.max(
-                                visible[index].value,
-                                minVisibleHeight,
-                              ),
-                              color: colors.primary,
-                              width: barWidth,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(3),
-                              ),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-                duration: Duration.zero,
+              final barWidth = _clamp(
+                constraints.maxWidth / visible.length * 0.62,
+                4,
+                18,
               );
+              return chart(barWidth);
             },
           ),
         ),
@@ -383,6 +460,44 @@ class _StatsBarChartState extends State<StatsBarChart> {
             ),
           ),
       ],
+    );
+  }
+
+  /// Eixo Y desenhado fora da área rolável, com os mesmos ticks da grade.
+  Widget _fixedYAxis(
+    NiceAxis axis,
+    TextStyle labelStyle,
+    double bottomReserved,
+  ) {
+    final color = Theme.of(context).colorScheme;
+    final plotHeight = widget.height - bottomReserved;
+    return Container(
+      width: 48,
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(color: color.outlineVariant, width: 1),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomReserved),
+        child: Stack(
+          children: [
+            for (final tick in statsAxisValues(axis))
+              Positioned(
+                top: (1 - tick / axis.maxY) * plotHeight - 8,
+                left: 0,
+                right: 4,
+                child: Text(
+                  statsAxisText(widget.kind, tick),
+                  textAlign: TextAlign.right,
+                  style: labelStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
