@@ -83,16 +83,30 @@ abstract final class AppStrings {
   static const String emptyRatingsChart =
       'Avalie leituras para ver este gráfico.';
   static const String emptyPeriod = 'Nenhum dado neste período.';
+  static const String emptyStatsPeriod = 'Sem leituras neste período.';
 
   // Resumo e tooltips dos gráficos de estatísticas.
   static const String chartTotalLabel = 'Total';
+  static const String totalVisiblePeriod = 'Total no período visível';
   static const String chartItemCountLabel = 'Itens';
+  static const String axisXLabel = 'Eixo X';
+  static const String axisYLabel = 'Eixo Y';
+  static const String axisAverageRating = 'Nota média (0 a 5)';
+  static const String completedReadings = 'Leituras concluídas';
+  static const String ratingByGenreSubtitle = 'Nota média por gênero (0 a 5)';
+  static const String ratingByAuthorSubtitle = 'Nota média por autor (0 a 5)';
   static const String showAll = 'Ver todos';
   static const String showLess = 'Ver menos';
   static const String pageSingular = 'página';
   static const String pagePlural = 'páginas';
 
   static String chartSummary(String label, String value) => '$label: $value';
+
+  static String chartAxisLabel(String x, String y) =>
+      '$axisXLabel: $x · $axisYLabel: $y';
+
+  static String chartSubtitle(String subject, String granularity) =>
+      '$subject por $granularity';
 
   static String pageCountLabel(int count) =>
       '$count ${count == 1 ? pageSingular : pagePlural}';

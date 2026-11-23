@@ -30,17 +30,24 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _chartCard(
-    String title,
-    List<StatsDatum> data,
-    String? emptyMessage, {
+    String title, {
+    required String subtitle,
+    required String axisXTitle,
+    required String axisYTitle,
+    required List<StatsDatum> data,
     required StatsValueKind kind,
+    String? emptyMessage,
     StatsXAxisMode mode = StatsXAxisMode.categories,
     bool horizontal = false,
     int maxInitialItems = 8,
     double height = 220,
+    bool periodSummary = false,
     String Function(StatsDatum item, int index)? tooltipLabelBuilder,
   }) {
     final theme = Theme.of(context);
+    final captionStyle = theme.textTheme.bodySmall!.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -48,14 +55,25 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(subtitle, style: captionStyle),
             const SizedBox(height: 2),
-            if (emptyMessage != null) ...[
-              const SizedBox(height: 6),
-              Text(emptyMessage, style: theme.textTheme.bodySmall),
-            ] else ...[
-              const SizedBox(height: 6),
+            Text(
+              AppStrings.chartAxisLabel(axisXTitle, axisYTitle),
+              style: captionStyle,
+            ),
+            const SizedBox(height: 8),
+            if (emptyMessage != null)
+              Text(emptyMessage, style: captionStyle)
+            else ...[
               Text(
-                statsSummaryText(kind, data),
+                statsSummaryText(
+                  kind,
+                  data,
+                  label: periodSummary
+                      ? AppStrings.totalVisiblePeriod
+                      : AppStrings.chartTotalLabel,
+                ),
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 8),
@@ -83,6 +101,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       _granularity == StatsGranularity.day
       ? (item, index) => item.fullLabel ?? item.label
       : null;
+
+  String get _granularityLabel => _granularity == StatsGranularity.day
+      ? AppStrings.granularityDay
+      : AppStrings.periodMonth;
 
   Widget _streakCard(StreakInfo streak) {
     return Card(
@@ -289,8 +311,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.statusChart,
-              summary.statusCounts,
-              summary.hasReadings
+              subtitle: AppStrings.chartSubtitle(
+                AppStrings.readings,
+                AppStrings.status.toLowerCase(),
+              ),
+              axisXTitle: AppStrings.status,
+              axisYTitle: AppStrings.readings,
+              data: summary.statusCounts,
+              emptyMessage: summary.hasReadings
                   ? null
                   : summary.hasWorks
                   ? AppStrings.emptyReadingsChart
@@ -300,15 +328,31 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.typeChart,
-              summary.typeCounts,
-              summary.hasWorks ? null : AppStrings.emptyWorksChart,
+              subtitle: AppStrings.chartSubtitle(
+                AppStrings.works,
+                AppStrings.type.toLowerCase(),
+              ),
+              axisXTitle: AppStrings.type,
+              axisYTitle: AppStrings.works,
+              data: summary.typeCounts,
+              emptyMessage: summary.hasWorks
+                  ? null
+                  : AppStrings.emptyWorksChart,
               kind: StatsValueKind.works,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.genreChart,
-              summary.genreCounts,
-              summary.hasWorks ? null : AppStrings.emptyWorksChart,
+              subtitle: AppStrings.chartSubtitle(
+                AppStrings.works,
+                AppStrings.genre.toLowerCase(),
+              ),
+              axisXTitle: AppStrings.genre,
+              axisYTitle: AppStrings.works,
+              data: summary.genreCounts,
+              emptyMessage: summary.hasWorks
+                  ? null
+                  : AppStrings.emptyWorksChart,
               kind: StatsValueKind.works,
               horizontal: true,
               height: 300,
@@ -316,34 +360,53 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.pagesChart,
-              summary.pagesSeries,
-              !summary.hasSessions
+              subtitle: AppStrings.chartSubtitle(
+                AppStrings.pagesRead,
+                _granularityLabel,
+              ),
+              axisXTitle: _granularityLabel,
+              axisYTitle: AppStrings.pages,
+              data: summary.pagesSeries,
+              emptyMessage: !summary.hasSessions
                   ? AppStrings.emptySessionsChart
                   : summary.hasPagesInPeriod
                   ? null
-                  : AppStrings.emptyPeriod,
+                  : AppStrings.emptyStatsPeriod,
               kind: StatsValueKind.pages,
               mode: _periodAxisMode,
+              periodSummary: true,
               tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.completedChart,
-              summary.completedSeries,
-              !summary.hasFinishedReadings
+              subtitle: AppStrings.chartSubtitle(
+                AppStrings.completedReadings,
+                _granularityLabel,
+              ),
+              axisXTitle: _granularityLabel,
+              axisYTitle: AppStrings.completedReadings,
+              data: summary.completedSeries,
+              emptyMessage: !summary.hasFinishedReadings
                   ? AppStrings.emptyFinishedChart
                   : summary.hasCompletedInPeriod
                   ? null
-                  : AppStrings.emptyPeriod,
+                  : AppStrings.emptyStatsPeriod,
               kind: StatsValueKind.readings,
               mode: _periodAxisMode,
+              periodSummary: true,
               tooltipLabelBuilder: _periodTooltipLabel,
             ),
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.ratingByGenre,
-              summary.ratingByGenre,
-              summary.hasRatings ? null : AppStrings.emptyRatingsChart,
+              subtitle: AppStrings.ratingByGenreSubtitle,
+              axisXTitle: AppStrings.genre,
+              axisYTitle: AppStrings.axisAverageRating,
+              data: summary.ratingByGenre,
+              emptyMessage: summary.hasRatings
+                  ? null
+                  : AppStrings.emptyRatingsChart,
               kind: StatsValueKind.ratings,
               horizontal: true,
               maxInitialItems: 6,
@@ -352,8 +415,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             const SizedBox(height: 16),
             _chartCard(
               AppStrings.ratingByAuthor,
-              summary.ratingByAuthor,
-              summary.hasRatings ? null : AppStrings.emptyRatingsChart,
+              subtitle: AppStrings.ratingByAuthorSubtitle,
+              axisXTitle: AppStrings.author,
+              axisYTitle: AppStrings.axisAverageRating,
+              data: summary.ratingByAuthor,
+              emptyMessage: summary.hasRatings
+                  ? null
+                  : AppStrings.emptyRatingsChart,
               kind: StatsValueKind.ratings,
               horizontal: true,
               maxInitialItems: 6,

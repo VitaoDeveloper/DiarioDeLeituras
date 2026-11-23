@@ -10,18 +10,51 @@ import 'package:reading_management/features/stats/stats_screen.dart';
 import 'package:reading_management/features/works/readings_providers.dart';
 import 'package:reading_management/features/works/works_providers.dart';
 
-Widget _emptyStatsScreen() => ProviderScope(
+Widget _statsScreen({
+  List<Work> works = const [],
+  List<Reading> readings = const [],
+  List<ReadingSession> sessions = const [],
+}) => ProviderScope(
   overrides: [
-    worksProvider.overrideWith((ref) => Stream.value(const <Work>[])),
-    readingsProvider.overrideWith((ref) => Stream.value(const <Reading>[])),
-    readingSessionsProvider.overrideWith(
-      (ref) => Stream.value(const <ReadingSession>[]),
-    ),
+    worksProvider.overrideWith((ref) => Stream.value(works)),
+    readingsProvider.overrideWith((ref) => Stream.value(readings)),
+    readingSessionsProvider.overrideWith((ref) => Stream.value(sessions)),
     streakProvider.overrideWithValue(
       const StreakInfo(current: 0, best: 0, atRisk: false, readDays: <int>{}),
     ),
   ],
   child: const MaterialApp(home: StatsScreen()),
+);
+
+Widget _emptyStatsScreen() => _statsScreen();
+
+Work _work() => Work(
+  id: 1,
+  type: WorkType.livro,
+  title: 'Obra',
+  author: 'Autor',
+  genre: 'Ficção',
+  status: WorkStatus.lido,
+  createdAt: DateTime(2026, 1, 1),
+);
+
+Reading _reading() => Reading(
+  id: 1,
+  workId: 1,
+  number: 1,
+  status: WorkStatus.lido,
+  rating: 4,
+  finishedAt: DateTime(2026, 11, 3),
+  createdAt: DateTime(2026, 1, 1),
+);
+
+ReadingSession _session() => ReadingSession(
+  id: 1,
+  workId: 1,
+  readingId: 1,
+  date: DateTime(2026, 11, 3),
+  pagesRead: 12,
+  note: null,
 );
 
 void main() {
@@ -146,6 +179,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(StatsBarChart), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cards mostram subtítulo, eixos e resumo do período', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _statsScreen(
+        works: [_work()],
+        readings: [_reading()],
+        sessions: [_session()],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        AppStrings.chartSubtitle(
+          AppStrings.pagesRead,
+          AppStrings.granularityDay,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        AppStrings.chartAxisLabel(AppStrings.granularityDay, AppStrings.pages),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(AppStrings.chartAxisLabel(AppStrings.type, AppStrings.works)),
+      findsOneWidget,
+    );
+    expect(find.textContaining(AppStrings.totalVisiblePeriod), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 

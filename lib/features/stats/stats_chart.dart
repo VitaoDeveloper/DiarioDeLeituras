@@ -98,7 +98,11 @@ String statsAxisText(StatsValueKind kind, double value) =>
     kind == StatsValueKind.ratings ? formatRating(value) : formatInteger(value);
 
 /// Linha de resumo exibida no cabeçalho de cada card.
-String statsSummaryText(StatsValueKind kind, List<StatsDatum> data) {
+String statsSummaryText(
+  StatsValueKind kind,
+  List<StatsDatum> data, {
+  String label = AppStrings.chartTotalLabel,
+}) {
   if (kind == StatsValueKind.ratings) {
     return AppStrings.chartSummary(
       AppStrings.chartItemCountLabel,
@@ -112,7 +116,7 @@ String statsSummaryText(StatsValueKind kind, List<StatsDatum> data) {
     StatsValueKind.works => AppStrings.workCountLabel(total.round()),
     StatsValueKind.ratings => '',
   };
-  return AppStrings.chartSummary(AppStrings.chartTotalLabel, formatted);
+  return AppStrings.chartSummary(label, formatted);
 }
 
 /// Gráfico de barras único para todas as telas de estatísticas.
