@@ -267,7 +267,119 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('cards mostram subtítulo, eixos e resumo do período', (
+  testWidgets(
+    'cards mostram subtítulo, títulos dos eixos e resumo do período',
+    (tester) async {
+      await tester.pumpWidget(
+        _statsScreen(
+          works: [_work()],
+          readings: [_reading()],
+          sessions: [_session()],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          AppStrings.chartSubtitle(
+            AppStrings.pagesRead,
+            AppStrings.granularityDay,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          AppStrings.chartAxisLabel(
+            AppStrings.granularityDay,
+            AppStrings.pages,
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.text(AppStrings.chartAxisLabel(AppStrings.type, AppStrings.works)),
+        findsNothing,
+      );
+      // Um título no seletor Dia/Mês e um em cada gráfico de período.
+      expect(find.text(AppStrings.granularityDay), findsNWidgets(3));
+      expect(find.text(AppStrings.works), findsWidgets);
+      expect(find.textContaining(AppStrings.totalVisiblePeriod), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('títulos dos eixos ficam fixos na origem do gráfico', (
+    tester,
+  ) async {
+    final data = [
+      const StatsDatum(label: '1', value: 134),
+      const StatsDatum(label: '2', value: 56),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 220,
+            child: StatsBarChart(
+              data: data,
+              kind: StatsValueKind.pages,
+              mode: StatsXAxisMode.days,
+              scrollable: true,
+              axisXTitle: 'Dia',
+              axisYTitle: 'Páginas',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dia'), findsOneWidget);
+    expect(find.text('Páginas'), findsOneWidget);
+    final rotated = find.byWidgetPredicate(
+      (widget) => widget is RotatedBox && widget.quarterTurns == 3,
+    );
+    expect(rotated, findsOneWidget);
+    expect(
+      find.descendant(of: rotated, matching: find.text('Páginas')),
+      findsOneWidget,
+    );
+
+    final scroll = find.byType(SingleChildScrollView);
+    expect(
+      find.descendant(of: scroll, matching: find.text('Dia')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: scroll, matching: find.text('Páginas')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  test('rótulos extremos do eixo Y cabem na área útil', () {
+    const plotHeight = 220 - 2 * statsVerticalInset - statsXTitleHeight - 44.0;
+    final axis = niceAxis(134);
+
+    for (final kind in <StatsValueKind>[
+      StatsValueKind.pages,
+      StatsValueKind.readings,
+    ]) {
+      for (final tick in <double>[0, axis.maxY]) {
+        final top = statsAxisLabelTop(tick, axis, plotHeight);
+        expect(top, greaterThanOrEqualTo(0), reason: '$kind no tick $tick');
+        expect(
+          top + statsTickTextHeight,
+          lessThanOrEqualTo(plotHeight),
+          reason: '$kind no tick $tick',
+        );
+      }
+    }
+  });
+
+  testWidgets('todos os rótulos do eixo Y dos gráficos de período cabem', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -279,26 +391,41 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        AppStrings.chartSubtitle(
-          AppStrings.pagesRead,
-          AppStrings.granularityDay,
-        ),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        AppStrings.chartAxisLabel(AppStrings.granularityDay, AppStrings.pages),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text(AppStrings.chartAxisLabel(AppStrings.type, AppStrings.works)),
-      findsOneWidget,
-    );
-    expect(find.textContaining(AppStrings.totalVisiblePeriod), findsWidgets);
+    final axes = find.byKey(const Key('stats-fixed-y-axis'));
+    expect(axes, findsNWidgets(2));
+
+    for (var index = 0; index < axes.evaluate().length; index++) {
+      final axis = axes.at(index);
+      final axisBox = tester.renderObject<RenderBox>(axis);
+      final axisTop = axisBox.localToGlobal(Offset.zero).dy;
+      final axisBottom = axisBox
+          .localToGlobal(Offset(0, axisBox.size.height))
+          .dy;
+
+      final labels = find.descendant(of: axis, matching: find.byType(Text));
+      expect(labels, findsWidgets, reason: 'eixo $index');
+      for (
+        var labelIndex = 0;
+        labelIndex < labels.evaluate().length;
+        labelIndex++
+      ) {
+        final labelBox = tester.renderObject<RenderBox>(labels.at(labelIndex));
+        final labelTop = labelBox.localToGlobal(Offset.zero).dy;
+        final labelBottom = labelBox
+            .localToGlobal(Offset(0, labelBox.size.height))
+            .dy;
+        expect(
+          labelTop,
+          greaterThanOrEqualTo(axisTop - 1),
+          reason: 'eixo $index, rótulo $labelIndex',
+        );
+        expect(
+          labelBottom,
+          lessThanOrEqualTo(axisBottom + 1),
+          reason: 'eixo $index, rótulo $labelIndex',
+        );
+      }
+    }
     expect(tester.takeException(), isNull);
   });
 
