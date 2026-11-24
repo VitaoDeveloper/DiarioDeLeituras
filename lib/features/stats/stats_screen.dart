@@ -58,11 +58,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             Text(title, style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(subtitle, style: captionStyle),
-            const SizedBox(height: 2),
-            Text(
-              AppStrings.chartAxisLabel(axisXTitle, axisYTitle),
-              style: captionStyle,
-            ),
             const SizedBox(height: 8),
             if (emptyMessage != null)
               Text(emptyMessage, style: captionStyle)
@@ -86,6 +81,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 scrollable: scrollable,
                 maxInitialItems: maxInitialItems,
                 height: height,
+                axisXTitle: axisXTitle,
+                axisYTitle: axisYTitle,
                 tooltipLabelBuilder: tooltipLabelBuilder,
               ),
             ],

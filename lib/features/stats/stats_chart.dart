@@ -166,6 +166,8 @@ class StatsBarChart extends StatefulWidget {
     this.barSlotWidth = 40,
     this.maxInitialItems = 8,
     this.height = 220,
+    this.axisXTitle,
+    this.axisYTitle,
     this.tooltipLabelBuilder,
   });
 
@@ -179,6 +181,10 @@ class StatsBarChart extends StatefulWidget {
   final double barSlotWidth;
   final int maxInitialItems;
   final double height;
+
+  /// Nomes dos eixos, desenhados na origem do gráfico (fora da rolagem).
+  final String? axisXTitle;
+  final String? axisYTitle;
 
   /// Permite usar o rótulo completo da data no tooltip.
   final String Function(StatsDatum item, int index)? tooltipLabelBuilder;
@@ -246,9 +252,15 @@ class _StatsBarChartState extends State<StatsBarChart> {
     );
     final axis = niceAxis(maxValue);
     final integerValues = widget.kind != StatsValueKind.ratings;
+    final hasXTitle = (widget.axisXTitle ?? '').trim().isNotEmpty;
+    final hasYTitle = (widget.axisYTitle ?? '').trim().isNotEmpty;
     // A margem vertical fica fora da área do fl_chart, mas dentro da altura
     // total do widget, para que rótulos de topo e base não sejam cortados.
-    final chartHeight = widget.height - 2 * statsVerticalInset;
+    // O nome do eixo X ocupa a parte inferior dessa margem quando existe.
+    final chartHeight =
+        widget.height -
+        2 * statsVerticalInset -
+        (hasXTitle ? statsXTitleHeight : 0);
     final bottomReserved = widget.scrollable
         ? 44.0
         : switch (widget.mode) {
@@ -256,6 +268,62 @@ class _StatsBarChartState extends State<StatsBarChart> {
             StatsXAxisMode.months => 44.0,
             StatsXAxisMode.categories => widget.horizontal ? 100.0 : 56.0,
           };
+    final plotHeight = chartHeight - bottomReserved;
+    final axisTitleStyle = theme.textTheme.bodySmall!.copyWith(
+      fontSize: 10,
+      color: colors.onSurfaceVariant,
+    );
+
+    // O nome do eixo Y fica na coluna do eixo numérico, com a base na origem.
+    Widget yAxisTitle() => SizedBox(
+      width: statsYTitleWidth,
+      height: plotHeight,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: RotatedBox(
+          quarterTurns: 3,
+          child: Text(
+            widget.axisYTitle ?? '',
+            style: axisTitleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+
+    // O nome do eixo X fica abaixo dos rótulos, alinhado à origem do gráfico.
+    Widget xAxisTitle() => SizedBox(
+      height: statsXTitleHeight,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left:
+                (hasYTitle ? statsYTitleWidth : 0) +
+                statsYAxisWidth +
+                (widget.scrollable ? statsHorizontalInset : 0),
+          ),
+          child: Text(
+            widget.axisXTitle ?? '',
+            style: axisTitleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+
+    Widget chartFrame(Widget chartArea) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: statsVerticalInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: chartHeight, child: chartArea),
+          if (hasXTitle) xAxisTitle(),
+        ],
+      ),
+    );
 
     Widget valueTitle(double value, TitleMeta meta) {
       if (value < 0 || value > axis.maxY + 1e-6) {
@@ -445,34 +513,31 @@ class _StatsBarChartState extends State<StatsBarChart> {
 
     if (widget.scrollable) {
       _scheduleScrollToLatest();
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: statsVerticalInset),
-        child: SizedBox(
-          height: chartHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _fixedYAxis(axis, labelStyle, bottomReserved, chartHeight),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const ClampingScrollPhysics(),
-                  clipBehavior: Clip.hardEdge,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: statsHorizontalInset,
-                    ),
-                    child: SizedBox(
-                      width: visible.length * widget.barSlotWidth,
-                      height: chartHeight,
-                      child: chart(widget.barSlotWidth * 0.6),
-                    ),
+      return chartFrame(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasYTitle) yAxisTitle(),
+            _fixedYAxis(axis, labelStyle, bottomReserved, chartHeight),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                clipBehavior: Clip.hardEdge,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: statsHorizontalInset,
+                  ),
+                  child: SizedBox(
+                    width: visible.length * widget.barSlotWidth,
+                    height: chartHeight,
+                    child: chart(widget.barSlotWidth * 0.6),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -480,21 +545,28 @@ class _StatsBarChartState extends State<StatsBarChart> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: statsVerticalInset),
-          child: SizedBox(
-            width: double.infinity,
-            height: chartHeight,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final barWidth = _clamp(
-                  constraints.maxWidth / visible.length * 0.62,
-                  4,
-                  18,
-                );
-                return chart(barWidth);
-              },
-            ),
+        chartFrame(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasYTitle) yAxisTitle(),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final barWidth = _clamp(
+                      constraints.maxWidth / visible.length * 0.62,
+                      4,
+                      18,
+                    );
+                    return SizedBox(
+                      width: double.infinity,
+                      height: chartHeight,
+                      child: chart(barWidth),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
         if (canCollapse)
@@ -519,6 +591,7 @@ class _StatsBarChartState extends State<StatsBarChart> {
     final color = Theme.of(context).colorScheme;
     final plotHeight = chartHeight - bottomReserved;
     return Container(
+      key: const Key('stats-fixed-y-axis'),
       width: statsYAxisWidth,
       height: chartHeight,
       decoration: BoxDecoration(
