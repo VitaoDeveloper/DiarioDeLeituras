@@ -8,6 +8,38 @@ import '../../core/strings.dart';
 import '../../core/tokens.dart';
 import 'stats_providers.dart';
 
+/// Margem vertical interna comum ao gráfico e ao eixo Y fixo.
+const double statsVerticalInset = 14;
+
+/// Preenchimento nas pontas da área rolável, para não cortar o último rótulo.
+const double statsHorizontalInset = 16;
+
+/// Largura da coluna dos rótulos numéricos (cabe "1.000" sem apertar).
+const double statsYAxisWidth = 56;
+
+/// Espaço reservado para o nome do eixo Y, girado junto à origem.
+const double statsYTitleWidth = 18;
+
+/// Espaço reservado para o nome do eixo X abaixo dos rótulos.
+const double statsXTitleHeight = 18;
+
+/// Altura aproximada de uma linha de 10 dp, usada ao limitar os rótulos das
+/// extremidades do eixo Y para dentro da área desenhável.
+const double statsTickTextHeight = 14;
+
+/// Posição superior do rótulo de um tick do eixo Y, já limitada à área útil.
+double statsAxisLabelTop(double tick, NiceAxis axis, double plotHeight) {
+  if (axis.maxY <= 0 || plotHeight <= statsTickTextHeight) return 0;
+  final center = (1 - tick / axis.maxY) * plotHeight;
+  final raw = center - statsTickTextHeight / 2;
+  final maxTop = plotHeight - statsTickTextHeight;
+  return raw < 0
+      ? 0
+      : raw > maxTop
+      ? maxTop
+      : raw;
+}
+
 /// Configuração de eixo Y compartilhada por todos os gráficos de barras.
 typedef NiceAxis = ({double maxY, double interval});
 
@@ -214,6 +246,9 @@ class _StatsBarChartState extends State<StatsBarChart> {
     );
     final axis = niceAxis(maxValue);
     final integerValues = widget.kind != StatsValueKind.ratings;
+    // A margem vertical fica fora da área do fl_chart, mas dentro da altura
+    // total do widget, para que rótulos de topo e base não sejam cortados.
+    final chartHeight = widget.height - 2 * statsVerticalInset;
     final bottomReserved = widget.scrollable
         ? 44.0
         : switch (widget.mode) {
@@ -324,7 +359,7 @@ class _StatsBarChartState extends State<StatsBarChart> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: !widget.scrollable,
-            reservedSize: widget.scrollable ? 0 : 48,
+            reservedSize: widget.scrollable ? 0 : statsYAxisWidth,
             interval: axis.interval,
             getTitlesWidget: valueTitle,
           ),
@@ -410,26 +445,34 @@ class _StatsBarChartState extends State<StatsBarChart> {
 
     if (widget.scrollable) {
       _scheduleScrollToLatest();
-      return SizedBox(
-        height: widget.height,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _fixedYAxis(axis, labelStyle, bottomReserved),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(),
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: visible.length * widget.barSlotWidth,
-                  height: widget.height,
-                  child: chart(widget.barSlotWidth * 0.6),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: statsVerticalInset),
+        child: SizedBox(
+          height: chartHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _fixedYAxis(axis, labelStyle, bottomReserved, chartHeight),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const ClampingScrollPhysics(),
+                  clipBehavior: Clip.hardEdge,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: statsHorizontalInset,
+                    ),
+                    child: SizedBox(
+                      width: visible.length * widget.barSlotWidth,
+                      height: chartHeight,
+                      child: chart(widget.barSlotWidth * 0.6),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -437,18 +480,21 @@ class _StatsBarChartState extends State<StatsBarChart> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: widget.height,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final barWidth = _clamp(
-                constraints.maxWidth / visible.length * 0.62,
-                4,
-                18,
-              );
-              return chart(barWidth);
-            },
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: statsVerticalInset),
+          child: SizedBox(
+            width: double.infinity,
+            height: chartHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = _clamp(
+                  constraints.maxWidth / visible.length * 0.62,
+                  4,
+                  18,
+                );
+                return chart(barWidth);
+              },
+            ),
           ),
         ),
         if (canCollapse)
@@ -468,11 +514,13 @@ class _StatsBarChartState extends State<StatsBarChart> {
     NiceAxis axis,
     TextStyle labelStyle,
     double bottomReserved,
+    double chartHeight,
   ) {
     final color = Theme.of(context).colorScheme;
-    final plotHeight = widget.height - bottomReserved;
+    final plotHeight = chartHeight - bottomReserved;
     return Container(
-      width: 48,
+      width: statsYAxisWidth,
+      height: chartHeight,
       decoration: BoxDecoration(
         border: Border(
           right: BorderSide(color: color.outlineVariant, width: 1),
@@ -484,7 +532,7 @@ class _StatsBarChartState extends State<StatsBarChart> {
           children: [
             for (final tick in statsAxisValues(axis))
               Positioned(
-                top: (1 - tick / axis.maxY) * plotHeight - 8,
+                top: statsAxisLabelTop(tick, axis, plotHeight),
                 left: 0,
                 right: 4,
                 child: Text(
